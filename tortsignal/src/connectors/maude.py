@@ -68,7 +68,7 @@ class MAUDEConnector(BaseConnector):
         """Fetch MAUDE reports with flexible filtering."""
         end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
-        date_range = f"[{start_date.strftime('%Y-%m-%d')}+TO+{end_date.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start_date.strftime('%Y-%m-%d')} TO {end_date.strftime('%Y-%m-%d')}]"
 
         search_parts = [f"date_received:{date_range}"]
         if device_name:
@@ -137,7 +137,7 @@ class MAUDEConnector(BaseConnector):
         """Get top devices by adverse event count."""
         end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
-        date_range = f"[{start_date.strftime('%Y-%m-%d')}+TO+{end_date.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start_date.strftime('%Y-%m-%d')} TO {end_date.strftime('%Y-%m-%d')}]"
 
         try:
             response = self.session.get(
@@ -189,7 +189,7 @@ class MAUDEConnector(BaseConnector):
         )
 
     def _count_reports_for_device(self, device_name: str, start: datetime, end: datetime) -> int:
-        date_range = f"[{start.strftime('%Y-%m-%d')}+TO+{end.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'date_received:{date_range}+AND+device.brand_name:"{device_name}"'
         try:
             response = self.session.get(MAUDE_BASE_URL, params={"search": search, "limit": 1}, timeout=30)
@@ -202,7 +202,7 @@ class MAUDEConnector(BaseConnector):
             return 0
 
     def _get_top_problems_for_device(self, device_name: str, start: datetime, end: datetime, top_n: int = 10) -> list[str]:
-        date_range = f"[{start.strftime('%Y-%m-%d')}+TO+{end.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'date_received:{date_range}+AND+device.brand_name:"{device_name}"'
         try:
             response = self.session.get(
@@ -219,7 +219,7 @@ class MAUDEConnector(BaseConnector):
             return []
 
     def _get_manufacturer_for_device(self, device_name: str, start: datetime, end: datetime) -> str | None:
-        date_range = f"[{start.strftime('%Y-%m-%d')}+TO+{end.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'date_received:{date_range}+AND+device.brand_name:"{device_name}"'
         try:
             response = self.session.get(
@@ -250,7 +250,7 @@ class MAUDEConnector(BaseConnector):
         """
         end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
-        date_range = f"[{start_date.strftime('%Y-%m-%d')}+TO+{end_date.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start_date.strftime('%Y-%m-%d')} TO {end_date.strftime('%Y-%m-%d')}]"
 
         try:
             response = self.session.get(
@@ -305,7 +305,7 @@ class MAUDEConnector(BaseConnector):
         )
 
     def _count_reports_for_code(self, product_code: str, start: datetime, end: datetime) -> int:
-        date_range = f"[{start.strftime('%Y-%m-%d')}+TO+{end.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'date_received:{date_range}+AND+device.device_report_product_code:"{product_code}"'
         try:
             response = self.session.get(MAUDE_BASE_URL, params={"search": search, "limit": 1}, timeout=30)
@@ -318,7 +318,7 @@ class MAUDEConnector(BaseConnector):
             return 0
 
     def _get_top_manufacturers_for_code(self, product_code: str, start: datetime, end: datetime, top_n: int = 20) -> list[dict[str, Any]]:
-        date_range = f"[{start.strftime('%Y-%m-%d')}+TO+{end.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'date_received:{date_range}+AND+device.device_report_product_code:"{product_code}"'
         try:
             response = self.session.get(
@@ -335,7 +335,7 @@ class MAUDEConnector(BaseConnector):
             return []
 
     def _get_top_brands_for_code(self, product_code: str, start: datetime, end: datetime, top_n: int = 20) -> list[dict[str, Any]]:
-        date_range = f"[{start.strftime('%Y-%m-%d')}+TO+{end.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'date_received:{date_range}+AND+device.device_report_product_code:"{product_code}"'
         try:
             response = self.session.get(
@@ -361,7 +361,7 @@ class MAUDEConnector(BaseConnector):
         """Get manufacturers by total adverse event count (detect systemic QC issues)."""
         end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
-        date_range = f"[{start_date.strftime('%Y-%m-%d')}+TO+{end_date.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start_date.strftime('%Y-%m-%d')} TO {end_date.strftime('%Y-%m-%d')}]"
 
         try:
             response = self.session.get(
@@ -410,7 +410,7 @@ class MAUDEConnector(BaseConnector):
         )
 
     def _count_reports_for_manufacturer(self, manufacturer: str, start: datetime, end: datetime) -> int:
-        date_range = f"[{start.strftime('%Y-%m-%d')}+TO+{end.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'date_received:{date_range}+AND+device.manufacturer_d_name:"{manufacturer}"'
         try:
             response = self.session.get(MAUDE_BASE_URL, params={"search": search, "limit": 1}, timeout=30)
@@ -423,7 +423,7 @@ class MAUDEConnector(BaseConnector):
             return 0
 
     def _get_top_products_for_manufacturer(self, manufacturer: str, start: datetime, end: datetime, top_n: int = 20) -> list[dict[str, Any]]:
-        date_range = f"[{start.strftime('%Y-%m-%d')}+TO+{end.strftime('%Y-%m-%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'date_received:{date_range}+AND+device.manufacturer_d_name:"{manufacturer}"'
         try:
             response = self.session.get(
@@ -460,7 +460,7 @@ class MAUDEConnector(BaseConnector):
         # Get baseline
         baseline_end = now - timedelta(days=baseline_days)
         baseline_start = baseline_end - timedelta(days=current_days)
-        baseline_search = f"date_received:[{baseline_start.strftime('%Y-%m-%d')}+TO+{baseline_end.strftime('%Y-%m-%d')}]"
+        baseline_search = f"date_received:[{baseline_start.strftime('%Y-%m-%d')} TO {baseline_end.strftime('%Y-%m-%d')}]"
         
         try:
             response = self.session.get(

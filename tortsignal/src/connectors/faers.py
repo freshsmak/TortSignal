@@ -67,7 +67,7 @@ class FAERSConnector(BaseConnector):
         """Fetch FAERS reports with flexible filtering."""
         end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
-        date_range = f"[{start_date.strftime('%Y%m%d')}+TO+{end_date.strftime('%Y%m%d')}]"
+        date_range = f"[{start_date.strftime('%Y-%m-%d')} TO {end_date.strftime('%Y-%m-%d')}]"
 
         search_parts = [f"receivedate:{date_range}"]
         if drug_name:
@@ -153,7 +153,7 @@ class FAERSConnector(BaseConnector):
         """Get top drugs by adverse event count."""
         end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
-        date_range = f"[{start_date.strftime('%Y%m%d')}+TO+{end_date.strftime('%Y%m%d')}]"
+        date_range = f"[{start_date.strftime('%Y-%m-%d')} TO {end_date.strftime('%Y-%m-%d')}]"
 
         search = f"receivedate:{date_range}"
         if serious_only:
@@ -207,7 +207,7 @@ class FAERSConnector(BaseConnector):
         )
 
     def _count_reports_for_drug(self, drug_name: str, start: datetime, end: datetime) -> int:
-        date_range = f"[{start.strftime('%Y%m%d')}+TO+{end.strftime('%Y%m%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = (
             f"receivedate:{date_range}+AND+"
             f'(patient.drug.openfda.brand_name:"{drug_name}"+OR+'
@@ -224,7 +224,7 @@ class FAERSConnector(BaseConnector):
             return 0
 
     def _get_top_reactions_for_drug(self, drug_name: str, start: datetime, end: datetime, top_n: int = 10) -> list[str]:
-        date_range = f"[{start.strftime('%Y%m%d')}+TO+{end.strftime('%Y%m%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = (
             f"receivedate:{date_range}+AND+"
             f'(patient.drug.openfda.brand_name:"{drug_name}"+OR+'
@@ -260,7 +260,7 @@ class FAERSConnector(BaseConnector):
         """
         end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
-        date_range = f"[{start_date.strftime('%Y%m%d')}+TO+{end_date.strftime('%Y%m%d')}]"
+        date_range = f"[{start_date.strftime('%Y-%m-%d')} TO {end_date.strftime('%Y-%m-%d')}]"
 
         search = f"receivedate:{date_range}"
         if serious_only:
@@ -316,7 +316,7 @@ class FAERSConnector(BaseConnector):
         )
 
     def _count_reports_for_reaction(self, reaction: str, start: datetime, end: datetime) -> int:
-        date_range = f"[{start.strftime('%Y%m%d')}+TO+{end.strftime('%Y%m%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'receivedate:{date_range}+AND+patient.reaction.reactionmeddrapt:"{reaction}"'
         try:
             response = self.session.get(FAERS_BASE_URL, params={"search": search, "limit": 1}, timeout=30)
@@ -330,7 +330,7 @@ class FAERSConnector(BaseConnector):
 
     def _get_top_drugs_for_reaction(self, reaction: str, start: datetime, end: datetime, top_n: int = 20) -> list[dict[str, Any]]:
         """Get top drugs associated with a specific reaction (the trace-back step)."""
-        date_range = f"[{start.strftime('%Y%m%d')}+TO+{end.strftime('%Y%m%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = f'receivedate:{date_range}+AND+patient.reaction.reactionmeddrapt:"{reaction}"'
         try:
             response = self.session.get(
@@ -403,7 +403,7 @@ class FAERSConnector(BaseConnector):
         # Get baseline
         baseline_end = now - timedelta(days=baseline_days)
         baseline_start = baseline_end - timedelta(days=current_days)
-        baseline_search = f"receivedate:[{baseline_start.strftime('%Y%m%d')}+TO+{baseline_end.strftime('%Y%m%d')}]"
+        baseline_search = f"receivedate:[{baseline_start.strftime('%Y-%m-%d')} TO {baseline_end.strftime('%Y-%m-%d')}]"
         
         try:
             response = self.session.get(
@@ -508,7 +508,7 @@ class FAERSConnector(BaseConnector):
         return signals
 
     def _count_drug_reaction_pair(self, drug_name: str, reaction: str, start: datetime, end: datetime) -> int:
-        date_range = f"[{start.strftime('%Y%m%d')}+TO+{end.strftime('%Y%m%d')}]"
+        date_range = f"[{start.strftime('%Y-%m-%d')} TO {end.strftime('%Y-%m-%d')}]"
         search = (
             f"receivedate:{date_range}+AND+"
             f'(patient.drug.openfda.brand_name:"{drug_name}"+OR+'
@@ -533,7 +533,7 @@ class FAERSConnector(BaseConnector):
         """Get manufacturers by total adverse event count (detect systemic QC issues)."""
         end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
-        date_range = f"[{start_date.strftime('%Y%m%d')}+TO+{end_date.strftime('%Y%m%d')}]"
+        date_range = f"[{start_date.strftime('%Y-%m-%d')} TO {end_date.strftime('%Y-%m-%d')}]"
 
         try:
             response = self.session.get(
