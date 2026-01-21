@@ -15,6 +15,13 @@ help:
 	@echo "    make court-discovery    Run court filing discovery"
 	@echo "    make full-discovery     Run all discovery pipelines"
 	@echo ""
+	@echo "  Timeseries Backfill:"
+	@echo "    make backfill-faers      Backfill FAERS drug data (2022-2025)"
+	@echo "    make backfill-maude      Backfill MAUDE device data (2022-2025)"
+	@echo "    make backfill-all        Backfill both FAERS and MAUDE"
+	@echo "    make backfill-faers-test Quick test (2024 only, dry-run)"
+	@echo "    make backfill-maude-test Quick test (2024 only, dry-run)"
+	@echo ""
 	@echo "  Development:"
 	@echo "    make test        Run tests"
 	@echo "    make lint        Run linter"
@@ -90,6 +97,27 @@ backfill-faers-dry:
 backfill-faers-test:
 	@echo "Testing FAERS backfill (2024 only)..."
 	python -m src.pipeline.backfill_faers --start-year 2024 --end-year 2024 --top-n 100 --dry-run
+
+# Backfill MAUDE timeseries (2022-2025, quarterly)
+backfill-maude:
+	@echo "Backfilling MAUDE timeseries data..."
+	python -m src.pipeline.backfill_maude --start-year 2022 --end-year 2025 --top-n 500
+
+# Backfill MAUDE in dry-run mode (test without database writes)
+backfill-maude-dry:
+	@echo "Backfilling MAUDE timeseries (dry run)..."
+	python -m src.pipeline.backfill_maude --start-year 2022 --end-year 2025 --top-n 500 --dry-run
+
+# Quick backfill test (single year)
+backfill-maude-test:
+	@echo "Testing MAUDE backfill (2024 only)..."
+	python -m src.pipeline.backfill_maude --start-year 2024 --end-year 2024 --top-n 100 --dry-run
+
+# Backfill both FAERS and MAUDE
+backfill-all: backfill-faers backfill-maude
+	@echo ""
+	@echo "Full timeseries backfill complete!"
+	@echo "Run SQL queries to analyze trends"
 
 # =============================================================================
 # DEVELOPMENT & TESTING
