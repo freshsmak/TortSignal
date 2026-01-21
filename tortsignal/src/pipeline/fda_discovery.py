@@ -41,28 +41,35 @@ def run_fda_discovery(
     current_days: int = 30,
     baseline_days: int = 365,
     persist: bool = True,
+    reference_date: datetime | None = None,
 ) -> dict[str, Any]:
     """
     Run comprehensive FDA discovery across FAERS and MAUDE.
-    
+
     Args:
         current_days: Days in current analysis window
         baseline_days: Days ago for baseline comparison
         persist: If True, save candidates to database
-        
+        reference_date: Reference date for queries (defaults to Sept 30, 2025 - latest available FDA data)
+
     Returns:
         Consolidated discovery results
     """
+    # Default to Sept 30, 2025 - the latest date with available FDA data
+    if reference_date is None:
+        reference_date = datetime(2025, 9, 30, tzinfo=timezone.utc)
     logger.info("=" * 70)
     logger.info("FDA COMPREHENSIVE DISCOVERY SCAN")
     logger.info(f"Parameters: current_days={current_days}, baseline_days={baseline_days}")
+    logger.info(f"Reference date: {reference_date.strftime('%Y-%m-%d')}")
     logger.info("=" * 70)
-    
+
     results = {
         "scan_time": datetime.now(timezone.utc).isoformat(),
         "parameters": {
             "current_days": current_days,
             "baseline_days": baseline_days,
+            "reference_date": reference_date.isoformat(),
         },
         "faers": {},
         "maude": {},
@@ -87,8 +94,8 @@ def run_fda_discovery(
         logger.info("")
         logger.info("PHASE 1: FAERS (Drug Adverse Events)")
         logger.info("-" * 50)
-        
-        faers = FAERSConnector()
+
+        faers = FAERSConnector(reference_date=reference_date)
         if faers.health_check():
             results["faers"] = faers.run_full_discovery(
                 current_days=current_days,
@@ -112,8 +119,8 @@ def run_fda_discovery(
         logger.info("")
         logger.info("PHASE 2: MAUDE (Device Adverse Events)")
         logger.info("-" * 50)
-        
-        maude = MAUDEConnector()
+
+        maude = MAUDEConnector(reference_date=reference_date)
         if maude.health_check():
             results["maude"] = maude.run_full_discovery(
                 current_days=current_days,
@@ -496,13 +503,24 @@ def main():
     parser.add_argument("--baseline-days", type=int, default=365, help="Baseline comparison (days ago)")
     parser.add_argument("--no-persist", action="store_true", help="Don't save to database")
     parser.add_argument("--output", type=str, help="Output JSON file for results")
+    parser.add_argument("--reference-date", type=str, help="Reference date for queries (YYYY-MM-DD). Defaults to 2025-09-30 (latest available FDA data)")
     args = parser.parse_args()
+
+    # Parse reference date if provided
+    reference_date = None
+    if args.reference_date:
+        try:
+            reference_date = datetime.strptime(args.reference_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            logger.error(f"Invalid date format: {args.reference_date}. Use YYYY-MM-DD")
+            sys.exit(1)
 
     try:
         results = run_fda_discovery(
             current_days=args.current_days,
             baseline_days=args.baseline_days,
             persist=not args.no_persist,
+            reference_date=reference_date,
         )
         
         if args.output:

@@ -73,6 +73,25 @@ full-discovery: fda-discovery court-discovery
 	@echo "Run 'make top-candidates' to see results"
 
 # =============================================================================
+# TIMESERIES BACKFILL - Build historical trend data
+# =============================================================================
+
+# Backfill FAERS timeseries (2022-2025, quarterly)
+backfill-faers:
+	@echo "Backfilling FAERS timeseries data..."
+	python -m src.pipeline.backfill_faers --start-year 2022 --end-year 2025 --top-n 500
+
+# Backfill FAERS in dry-run mode (test without database writes)
+backfill-faers-dry:
+	@echo "Backfilling FAERS timeseries (dry run)..."
+	python -m src.pipeline.backfill_faers --start-year 2022 --end-year 2025 --top-n 500 --dry-run
+
+# Quick backfill test (single year)
+backfill-faers-test:
+	@echo "Testing FAERS backfill (2024 only)..."
+	python -m src.pipeline.backfill_faers --start-year 2024 --end-year 2024 --top-n 100 --dry-run
+
+# =============================================================================
 # DEVELOPMENT & TESTING
 # =============================================================================
 

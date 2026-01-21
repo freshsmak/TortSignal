@@ -28,8 +28,9 @@ class FAERSConnector(BaseConnector):
     especially for novel injury patterns or low-volume specialty drugs.
     """
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, reference_date: datetime | None = None):
         self.api_key = api_key
+        self.reference_date = reference_date or datetime.now(timezone.utc)
         self.session = requests.Session()
         if api_key:
             self.session.params = {"api_key": api_key}
@@ -59,7 +60,7 @@ class FAERSConnector(BaseConnector):
         serious_only: bool = False,
     ) -> Generator[FAERSReport, None, None]:
         """Fetch FAERS reports with flexible filtering."""
-        end_date = datetime.now(timezone.utc)
+        end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
         date_range = f"[{start_date.strftime('%Y%m%d')}+TO+{end_date.strftime('%Y%m%d')}]"
 
@@ -145,7 +146,7 @@ class FAERSConnector(BaseConnector):
         self, days: int = 30, top_n: int = 200, serious_only: bool = False
     ) -> list[dict[str, Any]]:
         """Get top drugs by adverse event count."""
-        end_date = datetime.now(timezone.utc)
+        end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
         date_range = f"[{start_date.strftime('%Y%m%d')}+TO+{end_date.strftime('%Y%m%d')}]"
 
@@ -174,7 +175,7 @@ class FAERSConnector(BaseConnector):
         self, drug_name: str, current_days: int = 30, baseline_days: int = 365
     ) -> AdverseTrend | None:
         """Calculate adverse event trend for a specific drug."""
-        now = datetime.now(timezone.utc)
+        now = self.reference_date
 
         current_start = now - timedelta(days=current_days)
         current_count = self._count_reports_for_drug(drug_name, current_start, now)
@@ -247,12 +248,12 @@ class FAERSConnector(BaseConnector):
     ) -> list[dict[str, Any]]:
         """
         Get top adverse reactions by count across ALL drugs.
-        
+
         This is the key to reaction-first discovery: instead of asking
         "is Drug X bad?", we ask "what injuries are happening?" and then
         trace back to the drugs causing them.
         """
-        end_date = datetime.now(timezone.utc)
+        end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
         date_range = f"[{start_date.strftime('%Y%m%d')}+TO+{end_date.strftime('%Y%m%d')}]"
 
@@ -283,7 +284,7 @@ class FAERSConnector(BaseConnector):
         Calculate trend for a specific adverse reaction across all drugs.
         Returns the reaction trend with top associated drugs (the trace-back step).
         """
-        now = datetime.now(timezone.utc)
+        now = self.reference_date
 
         current_start = now - timedelta(days=current_days)
         current_count = self._count_reports_for_reaction(reaction, current_start, now)
@@ -390,8 +391,8 @@ class FAERSConnector(BaseConnector):
     ) -> list[AdverseTrend]:
         """PRODUCT-FIRST DISCOVERY: Find drugs with anomalous adverse event increases."""
         logger.info(f"Discovering drug anomalies (last {current_days} days)")
-        
-        now = datetime.now(timezone.utc)
+
+        now = self.reference_date
         current_drugs = self.get_trending_drugs(days=current_days, top_n=500)
         
         # Get baseline
@@ -457,13 +458,13 @@ class FAERSConnector(BaseConnector):
     ) -> list[DrugReactionSignal]:
         """
         PAIR DISCOVERY: Find specific drug+reaction combinations that are spiking.
-        
+
         More specific than drug-level or reaction-level. "Ozempic + Gastroparesis"
         might spike even if overall Ozempic and overall Gastroparesis look normal.
         """
         logger.info("Discovering drug+reaction pair anomalies")
-        
-        now = datetime.now(timezone.utc)
+
+        now = self.reference_date
         current_start = now - timedelta(days=current_days)
         baseline_end = now - timedelta(days=baseline_days)
         baseline_start = baseline_end - timedelta(days=current_days)
@@ -525,7 +526,7 @@ class FAERSConnector(BaseConnector):
 
     def get_trending_manufacturers(self, days: int = 30, top_n: int = 100) -> list[dict[str, Any]]:
         """Get manufacturers by total adverse event count (detect systemic QC issues)."""
-        end_date = datetime.now(timezone.utc)
+        end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
         date_range = f"[{start_date.strftime('%Y%m%d')}+TO+{end_date.strftime('%Y%m%d')}]"
 
@@ -557,11 +558,11 @@ class FAERSConnector(BaseConnector):
         logger.info("=" * 60)
         logger.info("FAERS FULL DISCOVERY SCAN")
         logger.info("=" * 60)
-        
+
         results = {
-            "scan_time": datetime.now(timezone.utc).isoformat(),
+            "scan_time": self.reference_date.isoformat(),
             "source": "faers",
-            "parameters": {"current_days": current_days, "baseline_days": baseline_days},
+            "parameters": {"current_days": current_days, "baseline_days": baseline_days, "reference_date": self.reference_date.isoformat()},
             "drug_anomalies": [],
             "reaction_anomalies": [],
             "pair_signals": [],

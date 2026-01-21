@@ -29,8 +29,9 @@ class MAUDEConnector(BaseConnector):
     "OTN" (surgical mesh) catches ALL mesh products across manufacturers.
     """
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, reference_date: datetime | None = None):
         self.api_key = api_key
+        self.reference_date = reference_date or self.reference_date
         self.session = requests.Session()
         if api_key:
             self.session.params = {"api_key": api_key}
@@ -60,7 +61,7 @@ class MAUDEConnector(BaseConnector):
         limit: int = 100,
     ) -> Generator[MAUDEReport, None, None]:
         """Fetch MAUDE reports with flexible filtering."""
-        end_date = datetime.now(timezone.utc)
+        end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
         date_range = f"[{start_date.strftime('%Y-%m-%d')}+TO+{end_date.strftime('%Y-%m-%d')}]"
 
@@ -129,7 +130,7 @@ class MAUDEConnector(BaseConnector):
         self, days: int = 30, top_n: int = 200
     ) -> list[dict[str, Any]]:
         """Get top devices by adverse event count."""
-        end_date = datetime.now(timezone.utc)
+        end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
         date_range = f"[{start_date.strftime('%Y-%m-%d')}+TO+{end_date.strftime('%Y-%m-%d')}]"
 
@@ -153,7 +154,7 @@ class MAUDEConnector(BaseConnector):
         self, device_name: str, current_days: int = 30, baseline_days: int = 365
     ) -> DeviceTrend | None:
         """Calculate adverse event trend for a specific device."""
-        now = datetime.now(timezone.utc)
+        now = self.reference_date
 
         current_start = now - timedelta(days=current_days)
         current_count = self._count_reports_for_device(device_name, current_start, now)
@@ -242,7 +243,7 @@ class MAUDEConnector(BaseConnector):
         This catches WHOLE CATEGORIES of devices, not just individual brands.
         Example: Product code "OTN" = all surgical mesh products
         """
-        end_date = datetime.now(timezone.utc)
+        end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
         date_range = f"[{start_date.strftime('%Y-%m-%d')}+TO+{end_date.strftime('%Y-%m-%d')}]"
 
@@ -269,7 +270,7 @@ class MAUDEConnector(BaseConnector):
         Calculate trend for a device category (by product code).
         Returns the category trend with top manufacturers and brands (trace-back).
         """
-        now = datetime.now(timezone.utc)
+        now = self.reference_date
 
         current_start = now - timedelta(days=current_days)
         current_count = self._count_reports_for_code(product_code, current_start, now)
@@ -353,7 +354,7 @@ class MAUDEConnector(BaseConnector):
         self, days: int = 30, top_n: int = 100
     ) -> list[dict[str, Any]]:
         """Get manufacturers by total adverse event count (detect systemic QC issues)."""
-        end_date = datetime.now(timezone.utc)
+        end_date = self.reference_date
         start_date = end_date - timedelta(days=days)
         date_range = f"[{start_date.strftime('%Y-%m-%d')}+TO+{end_date.strftime('%Y-%m-%d')}]"
 
@@ -377,7 +378,7 @@ class MAUDEConnector(BaseConnector):
         self, manufacturer: str, current_days: int = 30, baseline_days: int = 365
     ) -> ManufacturerTrend | None:
         """Calculate trend for a specific manufacturer across all their devices."""
-        now = datetime.now(timezone.utc)
+        now = self.reference_date
 
         current_start = now - timedelta(days=current_days)
         current_count = self._count_reports_for_manufacturer(manufacturer, current_start, now)
@@ -448,7 +449,7 @@ class MAUDEConnector(BaseConnector):
         """DEVICE-FIRST DISCOVERY: Find devices with anomalous adverse event increases."""
         logger.info(f"Discovering device anomalies (last {current_days} days)")
         
-        now = datetime.now(timezone.utc)
+        now = self.reference_date
         current_devices = self.get_trending_devices(days=current_days, top_n=500)
         
         # Get baseline
@@ -591,7 +592,7 @@ class MAUDEConnector(BaseConnector):
         logger.info("=" * 60)
         
         results = {
-            "scan_time": datetime.now(timezone.utc).isoformat(),
+            "scan_time": self.reference_date.isoformat(),
             "source": "maude",
             "parameters": {"current_days": current_days, "baseline_days": baseline_days},
             "device_anomalies": [],
