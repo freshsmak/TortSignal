@@ -161,6 +161,7 @@ health-check:
 	@python -c "from src.connectors.faers import FAERSConnector; print('FAERS:', 'OK' if FAERSConnector().health_check() else 'FAIL')"
 	@python -c "from src.connectors.maude import MAUDEConnector; print('MAUDE:', 'OK' if MAUDEConnector().health_check() else 'FAIL')"
 	@python -c "from src.connectors.pubmed import PubMedConnector; print('PubMed:', 'OK' if PubMedConnector().health_check() else 'FAIL')"
+	@python -c "from src.connectors.unicourt import UniCourtConnector; print('UniCourt:', 'OK' if UniCourtConnector().health_check() else 'FAIL')" || echo "UniCourt: SKIP (SDK not installed or network unavailable)"
 	@echo "Done."
 
 # Quick test of FAERS discovery (useful for development)
@@ -170,3 +171,17 @@ test-faers:
 # Quick test of MAUDE discovery
 test-maude:
 	@python -c "from src.connectors.maude import MAUDEConnector; c = MAUDEConnector(); print('Top 10 devices (last 30d):'); [print(f\"  {d['device_name']}: {d['count']}\") for d in c.get_trending_devices(days=30, top_n=10)]"
+
+# Quick test of UniCourt connector
+test-unicourt:
+	@echo "Testing UniCourt connector (fetching 5 recent product liability cases)..."
+	@python -c "from src.connectors.unicourt import UniCourtConnector; c = UniCourtConnector(); \
+	import sys; \
+	if c.health_check(): \
+		print('\\nFetching cases...'); \
+		cases = list(c.fetch(days=30, limit=5)); \
+		print(f'Found {len(cases)} cases:\\n'); \
+		[print(f'{i+1}. {case.title}\\n   Filed: {case.filed_date}\\n   Defendant: {case.defendant_text}\\n') for i, case in enumerate(cases)]; \
+	else: \
+		print('Health check failed - check credentials'); \
+		sys.exit(1)"

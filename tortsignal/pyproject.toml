@@ -9,6 +9,7 @@ dependencies = [
     "requests>=2.31",
     "python-dotenv>=1.0",
     "pydantic>=2.0",
+    "unicourt>=1.0",  # Official UniCourt SDK for court data
 ]
 
 [project.optional-dependencies]

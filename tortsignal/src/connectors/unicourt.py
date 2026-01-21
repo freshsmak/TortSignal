@@ -1,10 +1,24 @@
-"""UniCourt connector for court filings data."""
+"""UniCourt connector for court filings data.
+
+Uses the official UniCourt Python SDK to search for product liability cases.
+Documentation: https://docs.unicourt.com/
+SDK: https://github.com/UniCourt/enterprise-api-py-sdk
+"""
 
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Generator
 
-import requests
+try:
+    import unicourt
+    from unicourt import Authentication, CaseSearch
+    UNICOURT_SDK_AVAILABLE = True
+except ImportError:
+    UNICOURT_SDK_AVAILABLE = False
+    logger.warning(
+        "UniCourt SDK not installed. Install with: pip install unicourt\n"
+        "SDK documentation: https://github.com/UniCourt/enterprise-api-py-sdk"
+    )
 
 from src.config import get_config
 from src.connectors.base import BaseConnector
@@ -12,149 +26,327 @@ from src.models import CaseRecord
 
 logger = logging.getLogger(__name__)
 
-# Nature of Suit codes for Product Liability
-# 365 = Personal Injury - Product Liability
-# 367 = Personal Injury - Health Care/Pharmaceutical Personal Injury Product Liability
-NOS_CODES = [365, 367]
-
 
 class UniCourtConnector(BaseConnector):
-    """Connector for UniCourt court filings API."""
+    """
+    Connector for UniCourt court filings API using the official SDK.
+
+    Authentication:
+        Uses CLIENT_ID and CLIENT_SECRET from environment variables.
+        Automatically generates and manages OAuth tokens.
+
+    Example:
+        >>> connector = UniCourtConnector()
+        >>> if connector.health_check():
+        ...     for case in connector.fetch(days=30, limit=100):
+        ...         print(case.title)
+    """
 
     def __init__(self):
+        if not UNICOURT_SDK_AVAILABLE:
+            raise ImportError(
+                "UniCourt SDK is required but not installed. "
+                "Install with: pip install unicourt"
+            )
+
         config = get_config()
-        self.api_key = config.unicourt.api_key
-        self.base_url = config.unicourt.base_url.rstrip("/")
-        self.session = requests.Session()
-        self.session.headers.update({
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        })
+
+        # Configure SDK with credentials
+        unicourt.CLIENT_ID = config.unicourt.client_id
+        unicourt.CLIENT_SECRET = config.unicourt.client_secret
+
+        self.authenticated = False
+        logger.info("UniCourt connector initialized")
 
     @property
     def source_name(self) -> str:
         return "unicourt"
 
-    def health_check(self) -> bool:
-        """Check if UniCourt API is reachable."""
-        try:
-            # TODO: Replace with actual health check endpoint
-            # response = self.session.get(f"{self.base_url}/health", timeout=10)
-            # return response.status_code == 200
-            logger.warning("UniCourt health_check not implemented - returning True")
+    def _ensure_authenticated(self) -> bool:
+        """Ensure we have a valid authentication token."""
+        if self.authenticated:
             return True
+
+        try:
+            logger.info("Generating UniCourt authentication token...")
+            auth_obj, status_code = Authentication.generate_new_token()
+
+            if status_code == 200:
+                self.authenticated = True
+                logger.info("✓ UniCourt authentication successful")
+                return True
+            else:
+                logger.error(f"UniCourt authentication failed with status {status_code}")
+                return False
+
+        except Exception as e:
+            logger.error(f"UniCourt authentication error: {e}")
+            return False
+
+    def health_check(self) -> bool:
+        """Check if UniCourt API is reachable and credentials are valid."""
+        try:
+            return self._ensure_authenticated()
         except Exception as e:
             logger.error(f"UniCourt health check failed: {e}")
             return False
 
+    def __del__(self):
+        """Cleanup: invalidate token when connector is destroyed."""
+        if self.authenticated:
+            try:
+                Authentication.invalidate_token()
+                logger.info("UniCourt authentication token invalidated")
+            except Exception as e:
+                logger.warning(f"Error invalidating UniCourt token: {e}")
+
     def fetch(
         self,
-        days: int = 7,
+        days: int = 30,
         limit: int = 100,
-        nos_codes: list[int] | None = None,
+        page_size: int = 100,
     ) -> Generator[CaseRecord, None, None]:
         """
-        Fetch recent product liability cases.
+        Fetch recent product liability cases using the UniCourt SDK.
 
         Args:
-            days: Number of days to look back
-            limit: Maximum number of cases to return
-            nos_codes: Nature of Suit codes to filter (default: [365, 367])
+            days: Number of days to look back (default: 30)
+            limit: Maximum total number of cases to return (default: 100)
+            page_size: Results per page (default: 100, max: 100)
 
         Yields:
-            CaseRecord objects
+            CaseRecord objects for product liability cases
+
+        Example:
+            >>> connector = UniCourtConnector()
+            >>> for case in connector.fetch(days=30, limit=50):
+            ...     print(f"{case.title} - {case.filed_date}")
         """
-        nos_codes = nos_codes or NOS_CODES
+        if not self._ensure_authenticated():
+            logger.error("Authentication failed - cannot fetch cases")
+            return
+
         since_date = (datetime.now(timezone.utc) - timedelta(days=days)).date()
+        date_str = since_date.strftime("%Y-%m-%d")
 
-        # =================================================================
-        # TODO: IMPLEMENT YOUR UNICOURT API CALL HERE
-        # =================================================================
-        # 
-        # Your UniCourt sandbox should have an endpoint like:
-        #   GET /search/cases or GET /cases
-        #
-        # Example implementation:
-        #
-        # params = {
-        #     "filed_after": since_date.isoformat(),
-        #     "nature_of_suit": ",".join(map(str, nos_codes)),
-        #     "page_size": min(limit, 100),
-        # }
-        # 
-        # response = self.session.get(
-        #     f"{self.base_url}/search/cases",
-        #     params=params,
-        #     timeout=30,
-        # )
-        # response.raise_for_status()
-        # data = response.json()
-        #
-        # for item in data.get("cases", []):
-        #     yield self._parse_case(item)
-        #
-        # =================================================================
+        # Build query for product liability cases
+        # CaseType:(caseTypeGroup:(Product Liability)) filters for product liability
+        # filedDate:[DATE TO *] filters for cases filed after DATE
+        query = f'(CaseType:(caseTypeGroup:(Product Liability)) AND filedDate:[{date_str} TO *])'
 
-        logger.warning(
-            "UniCourt fetch() not implemented - returning empty results. "
-            "See src/connectors/unicourt.py for implementation instructions."
-        )
-        return
-        yield  # Make this a generator
+        logger.info(f"Searching UniCourt for product liability cases filed after {date_str}")
+        logger.debug(f"Query: {query}")
 
-    def _parse_case(self, raw: dict[str, Any]) -> CaseRecord:
+        fetched_count = 0
+        page_number = 1
+        max_pages = (limit // page_size) + 1
+
+        try:
+            while fetched_count < limit and page_number <= max_pages:
+                logger.debug(f"Fetching page {page_number} (page_size={page_size})")
+
+                # Call SDK search method
+                response, status_code = CaseSearch.search_cases(
+                    q=query,
+                    order='desc',
+                    sort='filedDate',
+                    page_number=page_number,
+                    page_size=min(page_size, 100)  # API max is 100
+                )
+
+                if status_code != 200:
+                    logger.error(f"UniCourt API returned status {status_code}")
+                    break
+
+                # Extract results from response
+                if not hasattr(response, 'case_search_result_array'):
+                    logger.warning("Response does not contain case_search_result_array")
+                    break
+
+                cases = response.case_search_result_array or []
+
+                if len(cases) == 0:
+                    logger.info(f"No more cases found (page {page_number})")
+                    break
+
+                logger.info(f"Retrieved {len(cases)} cases from page {page_number}")
+
+                # Parse and yield each case
+                for case_obj in cases:
+                    if fetched_count >= limit:
+                        break
+
+                    try:
+                        case_record = self._parse_case(case_obj)
+                        fetched_count += 1
+                        yield case_record
+                    except Exception as e:
+                        logger.warning(f"Failed to parse case: {e}")
+                        continue
+
+                page_number += 1
+
+            logger.info(f"Fetch complete: returned {fetched_count} cases")
+
+        except Exception as e:
+            logger.error(f"Error fetching cases from UniCourt: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _parse_case(self, case_obj: Any) -> CaseRecord:
         """
-        Parse a raw UniCourt API response into a CaseRecord.
+        Parse a UniCourt SDK case object into a CaseRecord.
 
-        TODO: Adjust field names based on your actual API response structure.
+        Args:
+            case_obj: Case object from unicourt SDK CaseSearch response
+
+        Returns:
+            CaseRecord with extracted fields
+
+        Note:
+            The SDK returns objects with attributes, not dictionaries.
+            Use getattr() with defaults to safely extract fields.
         """
-        # Extract parties
-        parties = raw.get("parties", [])
-        defendants = [p for p in parties if p.get("side", "").lower() == "defendant"]
-        defendant_names = [d.get("name", "") for d in defendants]
+        # Helper to safely get attributes
+        def get_attr(obj, *attrs, default=None):
+            """Try multiple attribute names, return first found or default."""
+            for attr in attrs:
+                if hasattr(obj, attr):
+                    val = getattr(obj, attr)
+                    if val is not None:
+                        return val
+            return default
 
-        # Extract attorneys/firms
-        attorneys = raw.get("attorneys", [])
-        plaintiff_attorneys = [a for a in attorneys if a.get("side", "").lower() == "plaintiff"]
-        plaintiff_firms = list(set(a.get("firm", "") for a in plaintiff_attorneys if a.get("firm")))
+        # Extract basic case info
+        case_id = get_attr(case_obj, 'case_id', 'id', 'case_number', default='')
+        title = get_attr(case_obj, 'title', 'case_name', 'case_title', default='')
+        filed_date = get_attr(case_obj, 'filed_date', 'filing_date', 'date_filed', default='')
 
         # Extract court info
-        court = raw.get("court", {})
+        court_obj = get_attr(case_obj, 'court', default=None)
+        if court_obj:
+            jurisdiction = get_attr(court_obj, 'jurisdiction', default='federal')
+            state = get_attr(court_obj, 'state', 'state_code', default=None)
+            court_name = get_attr(court_obj, 'name', 'court_name', default=None)
+        else:
+            jurisdiction = 'federal'
+            state = get_attr(case_obj, 'state', 'state_code', default=None)
+            court_name = get_attr(case_obj, 'court_name', default=None)
+
+        # Extract parties
+        parties = get_attr(case_obj, 'parties', 'party_array', default=[]) or []
+        defendant_names = []
+        for party in parties:
+            party_type = get_attr(party, 'party_type', 'type', 'role', default='').lower()
+            if 'defendant' in party_type:
+                name = get_attr(party, 'name', 'party_name', default='')
+                if name:
+                    defendant_names.append(name)
+
+        # Extract attorneys/firms
+        attorneys = get_attr(case_obj, 'attorneys', 'attorney_array', default=[]) or []
+        plaintiff_firms = set()
+        for attorney in attorneys:
+            party_type = get_attr(attorney, 'party_type', 'type', 'representing', default='').lower()
+            if 'plaintiff' in party_type:
+                firm = get_attr(attorney, 'firm', 'firm_name', 'law_firm', default='')
+                if firm:
+                    plaintiff_firms.add(firm)
+
+        # Extract URL
+        url = get_attr(
+            case_obj,
+            'url',
+            'docket_url',
+            'case_url',
+            'pacer_url',
+            default=None
+        )
+
+        # Extract snippet/summary
+        snippet = get_attr(
+            case_obj,
+            'complaint_text',
+            'claims_text',
+            'summary',
+            'description',
+            default=None
+        )
+
+        # Convert to string representation for raw_data
+        # (SDK objects may not be JSON serializable)
+        try:
+            if hasattr(case_obj, '__dict__'):
+                raw_data = {k: str(v) for k, v in case_obj.__dict__.items()
+                           if not k.startswith('_')}
+            else:
+                raw_data = {'case_id': case_id, 'title': title}
+        except Exception:
+            raw_data = {'case_id': case_id}
 
         return CaseRecord(
-            source_uid=str(raw.get("case_id", raw.get("id", ""))),
-            title=raw.get("title", raw.get("case_title", "")),
-            filed_date=raw.get("filed_date", raw.get("filing_date", "")),
-            jurisdiction=court.get("jurisdiction", "federal"),
-            state=court.get("state", raw.get("state")),
-            plaintiff_firm=plaintiff_firms[0] if plaintiff_firms else None,
-            url=raw.get("url", raw.get("docket_url")),
-            complaint_snippet=raw.get("complaint_text", raw.get("claims_text")),
+            source_uid=str(case_id),
+            title=title,
+            filed_date=str(filed_date) if filed_date else None,
+            jurisdiction=jurisdiction,
+            state=state,
+            plaintiff_firm=list(plaintiff_firms)[0] if plaintiff_firms else None,
+            url=url,
+            complaint_snippet=snippet,
             defendant_text=", ".join(defendant_names) if defendant_names else None,
-            raw_data=raw,
+            raw_data=raw_data,
         )
 
     def fetch_case_details(self, case_id: str) -> dict[str, Any] | None:
         """
-        Fetch detailed information for a specific case.
+        Fetch detailed information for a specific case using the UniCourt SDK.
 
-        TODO: Implement based on your UniCourt API.
+        Args:
+            case_id: The UniCourt case ID to fetch details for
+
+        Returns:
+            Dictionary with case details, or None if fetch fails
+
+        Note:
+            This method requires the CaseAnalytics or CaseDocket SDK modules.
+            Not implemented yet - see UniCourt SDK documentation for details.
         """
-        logger.warning(f"fetch_case_details not implemented for case_id={case_id}")
+        logger.warning(
+            f"fetch_case_details not yet implemented for case_id={case_id}. "
+            "See UniCourt SDK CaseAnalytics or CaseDocket modules."
+        )
         return None
 
 
 # =============================================================================
-# USAGE EXAMPLE (for reference)
+# USAGE EXAMPLE
 # =============================================================================
+#
+# Example 1: Basic usage
+# ----------------------
 #
 # from src.connectors.unicourt import UniCourtConnector
 #
 # connector = UniCourtConnector()
 #
 # if connector.health_check():
-#     for case in connector.fetch(days=7, limit=100):
-#         print(f"Case: {case.title}")
+#     print("✓ UniCourt API is accessible")
+#
+#     # Fetch product liability cases from last 30 days
+#     for case in connector.fetch(days=30, limit=50):
+#         print(f"\nCase: {case.title}")
 #         print(f"  Filed: {case.filed_date}")
 #         print(f"  Defendant: {case.defendant_text}")
-#         print()
+#         print(f"  Plaintiff Firm: {case.plaintiff_firm}")
+#         print(f"  State: {case.state}")
+#
+# Example 2: Integration with discovery pipeline
+# ----------------------------------------------
+#
+# from src.connectors.unicourt import UniCourtConnector
+# from src.pipeline.discovery import process_cases
+#
+# connector = UniCourtConnector()
+# cases = list(connector.fetch(days=7, limit=100))
+# print(f"Found {len(cases)} new product liability cases")
+# process_cases(cases)  # Feed into clustering/scoring pipeline

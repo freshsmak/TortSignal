@@ -38,16 +38,18 @@ class OpenAIConfig:
 
 @dataclass
 class UniCourtConfig:
-    api_key: str
+    client_id: str
+    client_secret: str
     base_url: str
 
     @classmethod
     def from_env(cls) -> "UniCourtConfig":
-        api_key = os.getenv("UNICOURT_API_KEY")
-        base_url = os.getenv("UNICOURT_BASE_URL")
-        if not api_key or not base_url:
-            raise ValueError("UNICOURT_API_KEY and UNICOURT_BASE_URL are required")
-        return cls(api_key=api_key, base_url=base_url)
+        client_id = os.getenv("UNICOURT_CLIENT_ID")
+        client_secret = os.getenv("UNICOURT_CLIENT_SECRET")
+        base_url = os.getenv("UNICOURT_BASE_URL", "https://enterpriseapi.unicourt.com")
+        if not client_id or not client_secret:
+            raise ValueError("UNICOURT_CLIENT_ID and UNICOURT_CLIENT_SECRET are required")
+        return cls(client_id=client_id, client_secret=client_secret, base_url=base_url)
 
 
 @dataclass
