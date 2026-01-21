@@ -105,17 +105,28 @@ class UniCourtConnector(BaseConnector):
         days: int = 30,
         limit: int = 100,
         page_size: int = 100,
+        strategy: str = "hybrid",
     ) -> Generator[CaseRecord, None, None]:
         """
         Fetch recent product liability cases using the UniCourt SDK.
+
+        Uses a hybrid strategy combining:
+        1. High-recall defendant query (structure-based)
+        2. High-precision tort language query (content-based)
 
         Args:
             days: Number of days to look back (default: 30)
             limit: Maximum total number of cases to return (default: 100)
             page_size: Results per page (default: 100, max: 100)
+            strategy: "hybrid" (default), "structure", or "language"
 
         Yields:
             CaseRecord objects for product liability cases
+
+        Strategy Details:
+            - "hybrid": Combines structure + language (recommended)
+            - "structure": High recall - all defendant cases
+            - "language": High precision - explicit tort language only
 
         Example:
             >>> connector = UniCourtConnector()
@@ -129,13 +140,93 @@ class UniCourtConnector(BaseConnector):
         since_date = (datetime.now(timezone.utc) - timedelta(days=days)).date()
         date_str = since_date.strftime("%Y-%m-%d")
 
-        # Build query for product liability cases
-        # CaseType:(caseTypeGroup:(Product Liability)) filters for product liability
-        # filedDate:[DATE TO *] filters for cases filed after DATE
-        query = f'(CaseType:(caseTypeGroup:(Product Liability)) AND filedDate:[{date_str} TO *])'
+        logger.info(f"Searching UniCourt using '{strategy}' strategy for cases filed after {date_str}")
 
-        logger.info(f"Searching UniCourt for product liability cases filed after {date_str}")
-        logger.debug(f"Query: {query}")
+        # Run queries based on strategy
+        if strategy == "hybrid":
+            # Combine both high-recall and high-precision
+            for case_record in self._fetch_hybrid(date_str, limit, page_size):
+                yield case_record
+        elif strategy == "structure":
+            # High-recall: all cases with defendants
+            query = f'filedDate:[{date_str} TO *] AND (Party:((PartyRole:(name:defendant))))'
+            logger.debug(f"Structure query: {query}")
+            for case_record in self._execute_query(query, limit, page_size):
+                yield case_record
+        elif strategy == "language":
+            # High-precision: explicit tort language
+            query = f'filedDate:[{date_str} TO *] AND ("product liability" OR "design defect" OR "failure to warn" OR "strict liability")'
+            logger.debug(f"Language query: {query}")
+            for case_record in self._execute_query(query, limit, page_size):
+                yield case_record
+        else:
+            logger.error(f"Unknown strategy: {strategy}")
+            return
+
+    def _fetch_hybrid(
+        self,
+        date_str: str,
+        limit: int,
+        page_size: int,
+    ) -> Generator[CaseRecord, None, None]:
+        """
+        Hybrid strategy: Combine structure-based and language-based queries.
+
+        Returns unique cases from both approaches, language matches prioritized.
+        """
+        seen_case_ids = set()
+        fetched_count = 0
+
+        # First: High-precision tort language query
+        language_query = f'filedDate:[{date_str} TO *] AND ("product liability" OR "design defect" OR "failure to warn" OR "strict liability")'
+        logger.info("Phase 1: High-precision tort language search")
+        logger.debug(f"Query: {language_query}")
+
+        for case_record in self._execute_query(language_query, limit // 2, page_size):
+            if fetched_count >= limit:
+                break
+
+            case_id = case_record.source_uid
+            if case_id not in seen_case_ids:
+                seen_case_ids.add(case_id)
+                fetched_count += 1
+                yield case_record
+
+        # Second: High-recall structure query (if under limit)
+        if fetched_count < limit:
+            structure_query = f'filedDate:[{date_str} TO *] AND (Party:((PartyRole:(name:defendant))))'
+            logger.info(f"Phase 2: High-recall structure search (need {limit - fetched_count} more)")
+            logger.debug(f"Query: {structure_query}")
+
+            for case_record in self._execute_query(structure_query, limit - fetched_count, page_size):
+                if fetched_count >= limit:
+                    break
+
+                case_id = case_record.source_uid
+                if case_id not in seen_case_ids:
+                    seen_case_ids.add(case_id)
+                    fetched_count += 1
+                    yield case_record
+
+        logger.info(f"Hybrid fetch complete: {fetched_count} unique cases")
+
+    def _execute_query(
+        self,
+        query: str,
+        limit: int,
+        page_size: int,
+    ) -> Generator[CaseRecord, None, None]:
+        """
+        Execute a single UniCourt query and yield results.
+
+        Args:
+            query: UniCourt query string
+            limit: Maximum number of results
+            page_size: Results per page
+
+        Yields:
+            CaseRecord objects
+        """
 
         fetched_count = 0
         page_number = 1
@@ -166,10 +257,10 @@ class UniCourtConnector(BaseConnector):
                 cases = response.case_search_result_array or []
 
                 if len(cases) == 0:
-                    logger.info(f"No more cases found (page {page_number})")
+                    logger.debug(f"No more cases found (page {page_number})")
                     break
 
-                logger.info(f"Retrieved {len(cases)} cases from page {page_number}")
+                logger.debug(f"Retrieved {len(cases)} cases from page {page_number}")
 
                 # Parse and yield each case
                 for case_obj in cases:
@@ -186,10 +277,8 @@ class UniCourtConnector(BaseConnector):
 
                 page_number += 1
 
-            logger.info(f"Fetch complete: returned {fetched_count} cases")
-
         except Exception as e:
-            logger.error(f"Error fetching cases from UniCourt: {e}")
+            logger.error(f"Error executing query: {e}")
             import traceback
             traceback.print_exc()
 
