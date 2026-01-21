@@ -1,6 +1,7 @@
 """FDA FAERS (drug adverse events) connector with broad discovery capabilities."""
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Generator
 
@@ -29,11 +30,15 @@ class FAERSConnector(BaseConnector):
     """
 
     def __init__(self, api_key: str | None = None, reference_date: datetime | None = None):
-        self.api_key = api_key
+        # Load API key from environment if not provided
+        self.api_key = api_key or os.getenv("OPENFDA_API_KEY")
         self.reference_date = reference_date or datetime.now(timezone.utc)
         self.session = requests.Session()
-        if api_key:
-            self.session.params = {"api_key": api_key}
+        if self.api_key:
+            self.session.params = {"api_key": self.api_key}
+            logger.debug("Using OpenFDA API key (rate limit: 120k/day)")
+        else:
+            logger.debug("No API key - using free tier (rate limit: 1k/day)")
 
     @property
     def source_name(self) -> str:
