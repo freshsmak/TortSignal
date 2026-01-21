@@ -353,63 +353,87 @@ def generate_why_now(metrics: dict) -> str:
 
 
 def get_sample_watchlist() -> pd.DataFrame:
-    """Return sample watchlist data for demo."""
+    """Return sample watchlist data for demo - EARLY SIGNALS, not formed MDLs."""
     return pd.DataFrame([
         {
             'cluster_id': '1',
-            'defendant_text': 'Bayer AG',
-            'product_text': 'Roundup',
-            'injury_text': 'Non-Hodgkin Lymphoma',
-            'score_total': 92,
-            'stage': 'HIGH_CONVICTION',
-            'category': 'chemical',
-            'last_updated': datetime.now() - timedelta(hours=2),
-            'velocity_7d': 47,
-            'breadth_states': 12
+            'defendant_text': 'L\'Oréal USA',
+            'product_text': 'Dark & Lovely Relaxer',
+            'injury_text': 'Uterine Cancer',
+            'score_total': 68,
+            'stage': 'INVESTIGATE',
+            'category': 'consumer',
+            'last_updated': datetime.now() - timedelta(hours=3),
+            'velocity_7d': 12,
+            'breadth_states': 4
         },
         {
             'cluster_id': '2',
-            'defendant_text': 'Johnson & Johnson',
-            'product_text': 'Talcum Powder',
-            'injury_text': 'Ovarian Cancer',
-            'score_total': 78,
-            'stage': 'HIGH_CONVICTION',
-            'category': 'consumer',
+            'defendant_text': 'Eli Lilly',
+            'product_text': 'Mounjaro',
+            'injury_text': 'Pancreatitis',
+            'score_total': 58,
+            'stage': 'INVESTIGATE',
+            'category': 'pharma',
+            'last_updated': datetime.now() - timedelta(hours=5),
+            'velocity_7d': 8,
+            'breadth_states': 3
+        },
+        {
+            'cluster_id': '3',
+            'defendant_text': 'Philips',
+            'product_text': 'DreamStation 2',
+            'injury_text': 'Chemical Exposure',
+            'score_total': 52,
+            'stage': 'INVESTIGATE',
+            'category': 'device',
             'last_updated': datetime.now() - timedelta(days=1),
-            'velocity_7d': 32,
-            'breadth_states': 9
+            'velocity_7d': 6,
+            'breadth_states': 5
+        },
+        {
+            'cluster_id': '4',
+            'defendant_text': 'Abbott Labs',
+            'product_text': 'Similac Infant Formula',
+            'injury_text': 'NEC',
+            'score_total': 38,
+            'stage': 'AWARENESS',
+            'category': 'consumer',
+            'last_updated': datetime.now() - timedelta(days=3),
+            'velocity_7d': 3,
+            'breadth_states': 3
         },
     ])
 
 
 def get_sample_dossier() -> dict:
-    """Return sample dossier for demo."""
+    """Return sample dossier for demo - EARLY SIGNAL."""
     return {
         'candidate': {
             'cluster_id': '1',
-            'defendant_text': 'Bayer AG',
-            'product_text': 'Roundup',
-            'injury_text': 'Non-Hodgkin Lymphoma',
-            'score_total': 92,
+            'defendant_text': 'L\'Oréal USA',
+            'product_text': 'Dark & Lovely Hair Relaxer',
+            'injury_text': 'Uterine Cancer',
+            'score_total': 68,
             'score_components': {
-                'literature': 92,
-                'court_velocity': 85,
-                'court_breadth': 70
+                'literature': 75,
+                'court_velocity': 58,
+                'court_breadth': 42
             },
-            'stage': 'HIGH_CONVICTION',
-            'category': 'chemical',
-            'first_seen': '2019-03-15',
+            'stage': 'INVESTIGATE',
+            'category': 'consumer',
+            'first_seen': '2024-10-12',
             'last_updated': '2025-01-20 14:30',
-            'why_now': '47 new filings in last 7 days across 12 states and 9 plaintiff firms.'
+            'why_now': '12 new filings in last 7 days across 4 states. Recent NIH study links chemical hair straighteners to uterine cancer.'
         },
         'timeline': [],
         'evidence': [],
         'injuries': [],
         'metrics': {
-            'velocity_7d': 47,
-            'velocity_28d': 183,
-            'accel_ratio': 2.3,
-            'breadth_states': 12,
-            'breadth_firms': 9
+            'velocity_7d': 12,
+            'velocity_28d': 34,
+            'accel_ratio': 1.8,
+            'breadth_states': 4,
+            'breadth_firms': 3
         }
     }

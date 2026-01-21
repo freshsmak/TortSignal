@@ -123,14 +123,28 @@ If no database is available, the app runs in **demo mode** with sample data for:
 
 ## Demo Mode
 
-When running without a database connection, the app displays sample data for demonstration purposes:
+When running without a database connection, the app displays sample data for demonstration purposes.
 
-**Sample Candidates**:
-- Bayer AG × Roundup × Non-Hodgkin Lymphoma (Score: 92, HIGH)
-- Johnson & Johnson × Talcum Powder × Ovarian Cancer (Score: 78, HIGH)
-- Novo Nordisk × Ozempic × Gastroparesis (Score: 64, INVESTIGATE)
-- 3M Company × AFFF Foam × Various Cancers (Score: 56, INVESTIGATE)
-- Philips × CPAP Machines × Respiratory Issues (Score: 42, INVESTIGATE)
+**Important**: These are **early-stage signals** (12-48 months pre-MDL formation), NOT well-known formed mass torts. TortSignal is designed to detect litigation 18-36 months before consolidation.
+
+**Sample Candidates** (Realistic Early Signals):
+- L'Oréal × Hair Relaxer × Uterine Cancer (Score: 68, INVESTIGATE)
+  - 12 scattered filings, 4 states, recent NIH study published
+- Eli Lilly × Mounjaro × Pancreatitis (Score: 58, INVESTIGATE)
+  - FAERS reports trending up, 8 filings, 3 states
+- Philips × DreamStation 2 × Chemical Exposure (Score: 52, INVESTIGATE)
+  - FDA reports emerging, 6 filings, early awareness stage
+- Abbott Labs × Similac × NEC (Score: 38, AWARENESS)
+  - Literature signal, 3 filings, pre-consolidation
+- Bayer × Essure × Device Migration (Score: 72, HIGH CONVICTION)
+  - One example of high-conviction signal: 18 filings, 7 states, convergent evidence
+
+**Why These Examples?**
+- **Low filing counts** (3-18, not thousands): Reflects pre-consolidation reality
+- **Scores in 40-70 range**: Investigate stage, not guaranteed wins
+- **Recent literature** (2024-2025): Fresh signals, not decade-old research
+- **Geographic dispersion** (2-7 states): Scattered, not nationwide MDL
+- **No SEC disclosures**: Most defendants haven't acknowledged risk yet
 
 All functionality works in demo mode, making it easy to explore the UI before connecting a live database.
 

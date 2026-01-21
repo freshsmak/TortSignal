@@ -283,69 +283,83 @@ def get_category_weights(category: str) -> dict:
 
 
 def get_sample_dossier() -> dict:
-    """Return sample dossier data for demo."""
+    """Return sample dossier data for demo - EARLY SIGNAL, not formed MDL."""
     return {
         'candidate': {
             'cluster_id': '1',
-            'defendant_text': 'Bayer AG',
-            'product_text': 'Roundup',
-            'injury_text': 'Non-Hodgkin Lymphoma',
-            'score_total': 92,
+            'defendant_text': 'L\'Oréal USA',
+            'product_text': 'Dark & Lovely Hair Relaxer',
+            'injury_text': 'Uterine Cancer',
+            'score_total': 68,
             'score_components': {
-                'faers_trend': 95,
-                'court_velocity': 85,
-                'literature': 92,
-                'court_breadth': 70
+                'literature': 75,
+                'court_velocity': 58,
+                'court_breadth': 42,
+                'faers_trend': 0  # No FDA reports - consumer product
             },
-            'stage': 'HIGH_CONVICTION',
-            'category': 'chemical',
-            'first_seen': '2019-03-15',
+            'stage': 'INVESTIGATE',
+            'category': 'consumer',
+            'first_seen': '2024-10-12',
             'last_updated': '2025-01-20 14:30',
-            'why_now': '47 new filings in last 7 days across 12 states and 9 plaintiff firms. Scientific literature shows strong causal link. IARC classification as probable carcinogen.'
+            'why_now': '12 new filings in last 7 days across 4 states. Recent NIH study links chemical hair straighteners to uterine cancer. FDA has not issued safety communication yet.'
         },
         'metrics': {
-            'velocity_7d': 47,
-            'velocity_28d': 183,
-            'accel_ratio': 2.3,
-            'breadth_states': 12,
-            'breadth_firms': 9
+            'velocity_7d': 12,
+            'velocity_28d': 34,
+            'accel_ratio': 1.8,
+            'breadth_states': 4,
+            'breadth_firms': 3
         },
         'timeline': [
             {
                 'event_type': 'FILING_SPIKE',
-                'detected_at': '2025-01-20',
-                'snippet': '+47 cases in 7 days across 12 states'
+                'detected_at': '2025-01-18',
+                'snippet': '+12 cases filed in 7 days (300% increase vs baseline)'
             },
             {
-                'event_type': 'META_ANALYSIS',
-                'detected_at': '2025-01-15',
-                'snippet': 'New meta-analysis published in JAMA Oncology linking glyphosate to NHL'
+                'event_type': 'PAPER_PUBLISHED',
+                'detected_at': '2024-12-05',
+                'snippet': 'NIH Sister Study: Hair straightener use associated with 2.6x uterine cancer risk'
             },
             {
-                'event_type': 'IARC_2A',
-                'detected_at': '2019-03-15',
-                'snippet': 'IARC classifies glyphosate as Group 2A probable human carcinogen'
+                'event_type': 'FILING_NEW',
+                'detected_at': '2024-10-12',
+                'snippet': 'First product liability case filed in Illinois (Smith v. L\'Oréal USA)'
             },
         ],
         'evidence': [
             {
                 'source_type': 'Court',
-                'title': 'Doe v. Bayer AG',
-                'filed_date': '2025-01-20',
+                'title': 'Johnson v. L\'Oréal USA Inc.',
+                'filed_date': '2025-01-18',
                 'external_url': 'https://example.com',
-                'snippet': 'Plaintiff alleges prolonged exposure to Roundup caused Non-Hodgkin Lymphoma'
+                'snippet': 'Plaintiff used Dark & Lovely relaxer for 15 years, diagnosed with uterine leiomyosarcoma age 38'
+            },
+            {
+                'source_type': 'Court',
+                'title': 'Williams v. Strength of Nature LLC',
+                'filed_date': '2025-01-16',
+                'external_url': 'https://example.com',
+                'snippet': 'Alleges defendants failed to warn of endocrine-disrupting chemicals in hair straightening products'
             },
             {
                 'source_type': 'PubMed',
-                'title': 'Glyphosate and NHL: Meta-Analysis',
-                'filed_date': '2025-01-15',
+                'title': 'Hair Product Use and Uterine Cancer - NIH Sister Study',
+                'filed_date': '2024-12-05',
                 'external_url': 'https://pubmed.com',
-                'snippet': 'Significant association between glyphosate exposure and NHL risk (OR: 1.41, 95% CI: 1.13-1.75)'
+                'snippet': 'Permanent hair straightener use associated with 2.6-fold increased uterine cancer risk (HR: 2.59, 95% CI: 1.46-4.58)'
+            },
+            {
+                'source_type': 'PubMed',
+                'title': 'Phthalates and Parabens in Hair Products - Exposure Study',
+                'filed_date': '2023-03-22',
+                'external_url': 'https://pubmed.com',
+                'snippet': 'Chemical hair straighteners contain high levels of endocrine disruptors including formaldehyde, phthalates, parabens'
             },
         ],
         'injuries': [
-            {'injury': 'Non-Hodgkin Lymphoma', 'count': 156, 'pct': 0.78},
-            {'injury': 'Leukemia', 'count': 30, 'pct': 0.15},
-            {'injury': 'Multiple Myeloma', 'count': 14, 'pct': 0.07},
+            {'injury': 'Uterine Leiomyosarcoma', 'count': 18, 'pct': 0.52},
+            {'injury': 'Endometrial Cancer', 'count': 12, 'pct': 0.35},
+            {'injury': 'Uterine Fibroids', 'count': 4, 'pct': 0.13},
         ]
     }

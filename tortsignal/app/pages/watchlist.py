@@ -196,66 +196,90 @@ def apply_sorting(df: pd.DataFrame, sort_by: str) -> pd.DataFrame:
 
 
 def get_sample_data() -> pd.DataFrame:
-    """Return sample data for demo purposes."""
+    """Return sample data for demo purposes - EARLY SIGNALS, not formed MDLs."""
     return pd.DataFrame([
         {
             'cluster_id': '1',
-            'defendant_text': 'Bayer AG',
-            'product_text': 'Roundup',
-            'injury_text': 'Non-Hodgkin Lymphoma',
-            'score_total': 92,
-            'stage': 'HIGH_CONVICTION',
-            'category': 'chemical',
-            'last_updated': '2h ago',
-            'velocity_7d': 47,
-            'breadth_states': 12
+            'defendant_text': 'L\'Oréal USA',
+            'product_text': 'Dark & Lovely Relaxer',
+            'injury_text': 'Uterine Cancer',
+            'score_total': 68,
+            'stage': 'INVESTIGATE',
+            'category': 'consumer',
+            'last_updated': '3h ago',
+            'velocity_7d': 12,
+            'breadth_states': 4
         },
         {
             'cluster_id': '2',
-            'defendant_text': 'Johnson & Johnson',
-            'product_text': 'Talcum Powder',
-            'injury_text': 'Ovarian Cancer',
-            'score_total': 78,
-            'stage': 'HIGH_CONVICTION',
-            'category': 'consumer',
-            'last_updated': '1d ago',
-            'velocity_7d': 32,
-            'breadth_states': 9
+            'defendant_text': 'Eli Lilly',
+            'product_text': 'Mounjaro',
+            'injury_text': 'Pancreatitis',
+            'score_total': 58,
+            'stage': 'INVESTIGATE',
+            'category': 'pharma',
+            'last_updated': '5h ago',
+            'velocity_7d': 8,
+            'breadth_states': 3
         },
         {
             'cluster_id': '3',
-            'defendant_text': 'Novo Nordisk',
-            'product_text': 'Ozempic',
-            'injury_text': 'Gastroparesis',
-            'score_total': 64,
+            'defendant_text': 'Philips',
+            'product_text': 'DreamStation 2',
+            'injury_text': 'Chemical Exposure',
+            'score_total': 52,
             'stage': 'INVESTIGATE',
-            'category': 'pharma',
-            'last_updated': '3h ago',
-            'velocity_7d': 28,
-            'breadth_states': 7
+            'category': 'device',
+            'last_updated': '1d ago',
+            'velocity_7d': 6,
+            'breadth_states': 5
         },
         {
             'cluster_id': '4',
-            'defendant_text': '3M Company',
-            'product_text': 'AFFF Foam',
-            'injury_text': 'Various Cancers',
-            'score_total': 56,
+            'defendant_text': 'DuPont',
+            'product_text': 'GenX Chemicals',
+            'injury_text': 'Thyroid Disease',
+            'score_total': 45,
             'stage': 'INVESTIGATE',
             'category': 'chemical',
-            'last_updated': '5h ago',
-            'velocity_7d': 18,
-            'breadth_states': 11
+            'last_updated': '2d ago',
+            'velocity_7d': 4,
+            'breadth_states': 2
         },
         {
             'cluster_id': '5',
-            'defendant_text': 'Philips',
-            'product_text': 'CPAP Machines',
-            'injury_text': 'Respiratory Issues',
-            'score_total': 42,
-            'stage': 'INVESTIGATE',
+            'defendant_text': 'Abbott Labs',
+            'product_text': 'Similac Infant Formula',
+            'injury_text': 'NEC',
+            'score_total': 38,
+            'stage': 'AWARENESS',
+            'category': 'consumer',
+            'last_updated': '3d ago',
+            'velocity_7d': 3,
+            'breadth_states': 3
+        },
+        {
+            'cluster_id': '6',
+            'defendant_text': 'Sanofi',
+            'product_text': 'Lantus',
+            'injury_text': 'Bladder Cancer',
+            'score_total': 34,
+            'stage': 'AWARENESS',
+            'category': 'pharma',
+            'last_updated': '4d ago',
+            'velocity_7d': 2,
+            'breadth_states': 2
+        },
+        {
+            'cluster_id': '7',
+            'defendant_text': 'Bayer AG',
+            'product_text': 'Essure',
+            'injury_text': 'Device Migration',
+            'score_total': 72,
+            'stage': 'HIGH_CONVICTION',
             'category': 'device',
-            'last_updated': '12h ago',
-            'velocity_7d': 14,
-            'breadth_states': 6
+            'last_updated': '1h ago',
+            'velocity_7d': 18,
+            'breadth_states': 7
         },
     ])
