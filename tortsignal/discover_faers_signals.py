@@ -463,9 +463,9 @@ def insert_signal_into_database(
                 "date_range": f"{START_DATE}-{END_DATE}"
             }
 
-            # Set death_count or hospitalization_count based on SAE type
+            # Map to existing schema columns (death_count, serious_count, report_count)
             death_count = metrics["total_count"] if sae_type == "Death" else 0
-            hosp_count = metrics["total_count"] if sae_type == "Hospitalization" else 0
+            serious_count = metrics["total_count"]  # All SAE types are serious by definition
 
             cur.execute("""
                 INSERT INTO product_signals (
@@ -474,20 +474,20 @@ def insert_signal_into_database(
                     signal_type,
                     severity_score,
                     death_count,
-                    hospitalization_count,
+                    serious_count,
+                    report_count,
                     first_detected_at,
-                    last_updated_at,
-                    metadata_json
+                    last_updated_at
                 )
-                VALUES (%s, %s, 'adverse_event_spike', %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %s)
+                VALUES (%s, %s, 'adverse_event_spike', %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 RETURNING signal_id
             """, (
                 product_id,
                 injury_id,
                 score,
                 death_count,
-                hosp_count,
-                Json(signal_metadata)
+                serious_count,
+                metrics["total_count"]
             ))
 
             result = cur.fetchone()
