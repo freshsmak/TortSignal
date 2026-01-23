@@ -1,0 +1,30 @@
+
+================================================================================
+AUDITSignal - Direct FARXIGA Signal Insertion
+================================================================================
+
+Inserting FARXIGA signal:
+  Baseline (Q4 2023): 397 deaths
+  Current (Q4 2024): 715 deaths
+  Change: +318 deaths (+80%)
+  Severity: HIGH CONVICTION
+
+❌ Error: failed to resolve host 'dpg-d5pfms3uibrs73cvgha0-a.oregon-postgres.render.com': [Errno -3] Temporary failure in name resolution
+Traceback (most recent call last):
+  File "/home/user/TortSignal/tortsignal/./test_farxiga_simple.py", line 48, in insert_farxiga_signal
+    with get_cursor() as cur:
+  File "/usr/lib/python3.11/contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "/home/user/TortSignal/tortsignal/src/db.py", line 25, in get_cursor
+    conn = get_connection()
+           ^^^^^^^^^^^^^^^^
+  File "/home/user/TortSignal/tortsignal/src/db.py", line 19, in get_connection
+    return psycopg.connect(config.database.url, row_factory=dict_row)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/psycopg/connection.py", line 100, in connect
+    attempts = conninfo_attempts(params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.11/dist-packages/psycopg/_conninfo_attempts.py", line 55, in conninfo_attempts
+    raise last_exc
+psycopg.OperationalError: failed to resolve host 'dpg-d5pfms3uibrs73cvgha0-a.oregon-postgres.render.com': [Errno -3] Temporary failure in name resolution

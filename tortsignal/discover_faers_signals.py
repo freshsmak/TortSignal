@@ -127,8 +127,15 @@ def get_top_drugs_by_serious_aes(limit: int = 500) -> List[Tuple[str, int]]:
         drugs = [(r["term"], r["count"]) for r in results]
 
         print(f"✓ Found {len(drugs)} drugs with serious AEs")
-        print(f"\nTop 10 by volume:")
-        for i, (drug, count) in enumerate(drugs[:10], 1):
+
+        # Show preview of drugs (up to 10)
+        preview_count = min(10, len(drugs))
+        if len(drugs) <= 10:
+            print(f"\n📋 All {len(drugs)} drugs to be analyzed:")
+        else:
+            print(f"\n📋 Top {preview_count} of {len(drugs)} drugs to be analyzed:")
+
+        for i, (drug, count) in enumerate(drugs[:preview_count], 1):
             print(f"  {i:2d}. {drug:30s} - {count:6,d} serious AEs")
 
         return drugs
@@ -566,7 +573,13 @@ def discover_and_populate_signals(max_drugs: int = 100, min_score: int = 20):
     print("\n" + "="*80)
     print("FAERS MASS SIGNAL DISCOVERY PIPELINE")
     print("="*80)
-    print(f"Target: {max_drugs} drugs")
+
+    # Show TEST MODE banner if limiting to small number
+    if max_drugs <= 20:
+        print(f"\n🧪 TEST MODE: Analyzing {max_drugs} drugs only")
+        print(f"   (Change max_drugs parameter to analyze more)")
+
+    print(f"\nTarget: {max_drugs} drugs")
     print(f"Threshold: Score >= {min_score}")
     print(f"Date range: {START_DATE} - {END_DATE} (24 months)")
     print()
@@ -581,6 +594,12 @@ def discover_and_populate_signals(max_drugs: int = 100, min_score: int = 20):
     print("\n" + "="*80)
     print(f"STEP 2: Analyzing {len(top_drugs)} drugs for statistical spikes")
     print("="*80)
+
+    if len(top_drugs) <= 20:
+        print(f"🔍 Processing {len(top_drugs)} drugs (this should be quick...)")
+    else:
+        print(f"🔍 Processing {len(top_drugs)} drugs (this may take several minutes...)")
+
     print()
 
     discovered_signals = []
