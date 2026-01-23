@@ -494,8 +494,12 @@ def insert_signal_into_database(
             signal_id = result['signal_id']
 
             # 5. Insert candidate
+            # Generate candidate_key for deduplication (normalized defendant|product)
+            candidate_key = f"{manufacturer.upper()}|{drug_name.upper()}"
+
             cur.execute("""
                 INSERT INTO candidates (
+                    candidate_key,
                     defendant_id,
                     product_id,
                     injury_id,
@@ -508,9 +512,14 @@ def insert_signal_into_database(
                     first_seen_at,
                     last_seen_at
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT (candidate_key) DO UPDATE
+                SET score_total = EXCLUDED.score_total,
+                    metrics_json = EXCLUDED.metrics_json,
+                    last_seen_at = CURRENT_TIMESTAMP
                 RETURNING candidate_id
             """, (
+                candidate_key,
                 defendant_id,
                 product_id,
                 injury_id,
