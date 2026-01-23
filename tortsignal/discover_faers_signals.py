@@ -410,7 +410,7 @@ def insert_signal_into_database(
     """
     try:
         with get_cursor() as cur:
-            # 1. Insert/get defendant (manufacturer)
+            # 1. Insert/get defendant (manufacturer) - for future use
             cur.execute("""
                 INSERT INTO defendants (name, defendant_type, metadata_json)
                 VALUES (%s, 'pharmaceutical', %s)
@@ -421,13 +421,13 @@ def insert_signal_into_database(
             result = cur.fetchone()
             defendant_id = result['defendant_id']
 
-            # 2. Insert/get product (drug)
+            # 2. Insert/get product (drug) - without defendant_id (simplified schema)
             cur.execute("""
-                INSERT INTO products (defendant_id, name, product_type, metadata_json)
-                VALUES (%s, %s, 'pharmaceutical', %s)
-                ON CONFLICT (defendant_id, name) DO UPDATE SET name = EXCLUDED.name
+                INSERT INTO products (name, product_type, metadata_json)
+                VALUES (%s, 'pharmaceutical', %s)
+                ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
                 RETURNING product_id
-            """, (defendant_id, drug_name, Json({})))
+            """, (drug_name, Json({})))
 
             result = cur.fetchone()
             product_id = result['product_id']
