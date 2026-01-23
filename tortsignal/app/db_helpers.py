@@ -120,7 +120,7 @@ def get_watchlist(filters: dict) -> pd.DataFrame:
                 params.append(filters['min_score'])
 
             if filters.get('days', 9999) < 9999:
-                where_clauses.append("updated_at >= NOW() - INTERVAL '%s days'")
+                where_clauses.append("last_seen_at >= NOW() - INTERVAL '%s days'")
                 params.append(filters['days'])
 
             where_sql = " AND ".join(where_clauses)
@@ -128,7 +128,7 @@ def get_watchlist(filters: dict) -> pd.DataFrame:
             # Execute query
             query = f"""
                 SELECT
-                    cluster_id,
+                    candidate_id,
                     defendant_text,
                     product_text,
                     injury_text,
@@ -140,9 +140,9 @@ def get_watchlist(filters: dict) -> pd.DataFrame:
                         ELSE 'QUIET'
                     END as stage,
                     category,
-                    updated_at as last_updated,
-                    metrics->>'velocity_7d' as velocity_7d,
-                    metrics->>'breadth_states' as breadth_states
+                    last_seen_at as last_updated,
+                    metrics_json->>'velocity_7d' as velocity_7d,
+                    metrics_json->>'breadth_states' as breadth_states
                 FROM candidates
                 WHERE {where_sql}
                 ORDER BY score_total DESC
@@ -187,7 +187,7 @@ def get_dossier(cluster_id: str) -> dict:
             # Fetch candidate
             cur.execute("""
                 SELECT
-                    cluster_id,
+                    candidate_id,
                     defendant_text,
                     product_text,
                     injury_text,
@@ -195,11 +195,11 @@ def get_dossier(cluster_id: str) -> dict:
                     score_components,
                     category,
                     status,
-                    created_at as first_seen,
-                    updated_at as last_updated,
-                    metrics
+                    first_seen_at as first_seen,
+                    last_seen_at as last_updated,
+                    metrics_json
                 FROM candidates
-                WHERE cluster_id = %s
+                WHERE candidate_id = %s
             """, (cluster_id,))
 
             row = cur.fetchone()
