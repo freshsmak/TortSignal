@@ -279,12 +279,8 @@ def score_signal(metrics: Dict) -> Tuple[float, str, str]:
     """
     score = 0
 
-    # FILTER: Declining trends are not litigation-worthy
-    # If death rate is DECREASING, return minimum score (drug getting safer)
-    if metrics["velocity"] < 0:
-        return (0.0, "QUIET", "drug_declining")
-
     # Severity component (0-40 points): Based on absolute death counts
+    # This applies regardless of trend (even declining deaths matter if absolute count is high)
     if metrics["total_deaths"] >= 500:
         score += 40
     elif metrics["total_deaths"] >= 200:
@@ -295,6 +291,7 @@ def score_signal(metrics: Dict) -> Tuple[float, str, str]:
         score += 10
 
     # Velocity component (0-30 points): % increase baseline to recent
+    # Only RISING trends get points (declining = 0, not penalty)
     velocity = metrics["velocity"]
     if velocity >= 100:  # 100%+ increase
         score += 30
@@ -306,8 +303,10 @@ def score_signal(metrics: Dict) -> Tuple[float, str, str]:
         score += 10
     elif velocity > 0:
         score += 5
+    # Note: velocity <= 0 adds 0 points (no penalty, no reward)
 
     # Recent spike component (0-20 points): Recent acceleration
+    # Only POSITIVE spikes get points
     recent_spike = metrics["recent_spike"]
     if recent_spike >= 50:
         score += 20
@@ -317,8 +316,10 @@ def score_signal(metrics: Dict) -> Tuple[float, str, str]:
         score += 10
     elif recent_spike > 0:
         score += 5
+    # Note: negative recent_spike adds 0 points
 
     # Acceleration component (0-10 points): Sustained growth
+    # Only POSITIVE acceleration gets points
     if metrics["acceleration"] >= 20:
         score += 10
     elif metrics["acceleration"] >= 10:
@@ -327,6 +328,12 @@ def score_signal(metrics: Dict) -> Tuple[float, str, str]:
         score += 5
     elif metrics["acceleration"] > 0:
         score += 3
+    # Note: negative acceleration adds 0 points
+
+    # Penalty for steep declines (suggests resolved/disclosed issue)
+    # If deaths declining >40%, apply small penalty
+    if velocity < -40:
+        score = max(0, score - 10)  # -10 points, but never below 0
 
     # Determine stage
     if score >= 70:
