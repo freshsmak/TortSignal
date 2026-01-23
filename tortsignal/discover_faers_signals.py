@@ -693,7 +693,8 @@ if __name__ == "__main__":
         print(f"⚠️  Constraint creation failed: {e}\n")
 
     # Run discovery pipeline
+    # TEST MODE: Start with 10 drugs to validate schema compatibility
     discover_and_populate_signals(
-        max_drugs=100,      # Analyze top 100 drugs
+        max_drugs=10,       # TEST: Analyze top 10 drugs first
         min_score=20        # AWARENESS threshold or higher
     )
