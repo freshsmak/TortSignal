@@ -23,16 +23,16 @@ class DatabaseConfig:
 
 
 @dataclass
-class OpenAIConfig:
+class AnthropicConfig:
     api_key: str
-    model: str = "gpt-4o-mini"
+    model: str = "claude-3-haiku-20240307"
 
     @classmethod
-    def from_env(cls) -> "OpenAIConfig":
-        api_key = os.getenv("OPENAI_API_KEY")
+    def from_env(cls) -> "AnthropicConfig":
+        api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
-        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+            raise ValueError("ANTHROPIC_API_KEY environment variable is required")
+        model = os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
         return cls(api_key=api_key, model=model)
 
 
@@ -81,7 +81,7 @@ class Config:
     """Main configuration container."""
 
     database: DatabaseConfig
-    openai: OpenAIConfig
+    anthropic: AnthropicConfig
     unicourt: UniCourtConfig
     openfda: OpenFDAConfig
     app: AppConfig
@@ -91,7 +91,7 @@ class Config:
         """Load all configuration from environment variables."""
         return cls(
             database=DatabaseConfig.from_env(),
-            openai=OpenAIConfig.from_env(),
+            anthropic=AnthropicConfig.from_env(),
             unicourt=UniCourtConfig.from_env(),
             openfda=OpenFDAConfig.from_env(),
             app=AppConfig.from_env(),
