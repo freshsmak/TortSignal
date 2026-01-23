@@ -167,6 +167,7 @@ def get_quarterly_serious_ae_counts(drug_name: str) -> Dict[str, Dict[str, int]]
             "Death": 0,
             "Hospitalization": 0,
             "LifeThreatening": 0,
+            "Disability": 0,
         }
 
         # Query for deaths
@@ -202,28 +203,43 @@ def get_quarterly_serious_ae_counts(drug_name: str) -> Dict[str, Dict[str, int]]
         if life_result and "meta" in life_result:
             counts["LifeThreatening"] = life_result["meta"]["results"]["total"]
 
+        # Query for disability
+        disability_query = (
+            f'receivedate:[{start}+TO+{end}]'
+            f'+AND+patient.drug.medicinalproduct:"{drug_escaped}"'
+            f'+AND+seriousnessdisabling:1'
+        )
+
+        disability_result = query_faers(disability_query, limit=1)
+        if disability_result and "meta" in disability_result:
+            counts["Disability"] = disability_result["meta"]["results"]["total"]
+
         quarterly_data[quarter] = counts
 
     return quarterly_data
 
 
-def calculate_signal_metrics(quarterly_data: Dict[str, Dict[str, int]]) -> Dict:
+def calculate_signal_metrics(quarterly_data: Dict[str, Dict[str, int]], sae_type: str) -> Dict:
     """
-    Calculate velocity, acceleration, and severity scores from quarterly data.
+    Calculate velocity, acceleration, and severity scores from quarterly data for a specific SAE type.
+
+    Args:
+        quarterly_data: Dict of quarter -> SAE counts
+        sae_type: "Death", "Hospitalization", "LifeThreatening", or "Disability"
 
     Returns:
-        Dict with metrics: velocity, acceleration, severity, total_deaths, etc.
+        Dict with metrics: velocity, acceleration, severity, total_count, etc.
     """
     quarters = sorted(quarterly_data.keys())
 
-    # Extract death counts by quarter
-    death_counts = [quarterly_data[q]["Death"] for q in quarters]
-    total_deaths = sum(death_counts)
+    # Extract counts for this SAE type by quarter
+    counts = [quarterly_data[q].get(sae_type, 0) for q in quarters]
+    total_count = sum(counts)
 
     # Calculate velocity (% change from baseline to most recent)
-    if len(death_counts) >= 4:
-        baseline = statistics.mean(death_counts[:4])  # First 4 quarters (2024)
-        recent = statistics.mean(death_counts[-4:])   # Last 4 quarters (2025)
+    if len(counts) >= 4:
+        baseline = statistics.mean(counts[:4])  # First 4 quarters (2024)
+        recent = statistics.mean(counts[-4:])   # Last 4 quarters (2025)
 
         if baseline > 0:
             velocity = ((recent - baseline) / baseline) * 100
@@ -234,17 +250,17 @@ def calculate_signal_metrics(quarterly_data: Dict[str, Dict[str, int]]) -> Dict:
 
     # Calculate acceleration (quarter-over-quarter change)
     qoq_changes = []
-    for i in range(1, len(death_counts)):
-        if death_counts[i-1] > 0:
-            change = ((death_counts[i] - death_counts[i-1]) / death_counts[i-1]) * 100
+    for i in range(1, len(counts)):
+        if counts[i-1] > 0:
+            change = ((counts[i] - counts[i-1]) / counts[i-1]) * 100
             qoq_changes.append(change)
 
     acceleration = statistics.mean(qoq_changes) if qoq_changes else 0
 
     # Recent spike (last 2 quarters vs previous 2)
-    if len(death_counts) >= 4:
-        prev_avg = statistics.mean(death_counts[-4:-2])
-        recent_avg = statistics.mean(death_counts[-2:])
+    if len(counts) >= 4:
+        prev_avg = statistics.mean(counts[-4:-2])
+        recent_avg = statistics.mean(counts[-2:])
 
         if prev_avg > 0:
             recent_spike = ((recent_avg - prev_avg) / prev_avg) * 100
@@ -253,42 +269,48 @@ def calculate_signal_metrics(quarterly_data: Dict[str, Dict[str, int]]) -> Dict:
     else:
         recent_spike = 0
 
-    # Total serious AEs (deaths + hospitalizations)
-    total_serious = sum(
-        q["Death"] + q["Hospitalization"] + q["LifeThreatening"]
-        for q in quarterly_data.values()
-    )
-
     return {
+        "sae_type": sae_type,
         "velocity": round(velocity, 1),
         "acceleration": round(acceleration, 1),
         "recent_spike": round(recent_spike, 1),
-        "total_deaths": total_deaths,
-        "total_serious_aes": total_serious,
-        "baseline_deaths": int(statistics.mean(death_counts[:4])) if len(death_counts) >= 4 else 0,
-        "recent_deaths": int(statistics.mean(death_counts[-4:])) if len(death_counts) >= 4 else 0,
+        "total_count": total_count,
+        "baseline_count": int(statistics.mean(counts[:4])) if len(counts) >= 4 else 0,
+        "recent_count": int(statistics.mean(counts[-4:])) if len(counts) >= 4 else 0,
     }
 
 
-def score_signal(metrics: Dict) -> Tuple[float, str, str]:
+def score_signal(metrics: Dict, sae_type: str) -> Tuple[float, str, str]:
     """
     Score signal 0-100 based on litigation potential.
+
+    Args:
+        metrics: Signal metrics dict
+        sae_type: Type of SAE (Death, Hospitalization, Disability, LifeThreatening)
 
     Returns:
         (score, stage, category)
     """
     score = 0
+    total_count = metrics["total_count"]
 
-    # Severity component (0-40 points): Based on absolute death counts
-    # This applies regardless of trend (even declining deaths matter if absolute count is high)
-    if metrics["total_deaths"] >= 500:
-        score += 40
-    elif metrics["total_deaths"] >= 200:
-        score += 30
-    elif metrics["total_deaths"] >= 100:
-        score += 20
-    elif metrics["total_deaths"] >= 50:
-        score += 10
+    # Severity thresholds vary by SAE type
+    # Deaths are rarer but more severe; Hospitalizations are more common
+    if sae_type == "Death":
+        thresholds = {500: 40, 200: 30, 100: 20, 50: 10}
+    elif sae_type == "Hospitalization":
+        thresholds = {2000: 40, 1000: 30, 500: 20, 200: 10}  # Higher volume expected
+    elif sae_type == "Disability":
+        thresholds = {1000: 40, 500: 30, 200: 20, 100: 10}
+    else:  # LifeThreatening
+        thresholds = {500: 40, 200: 30, 100: 20, 50: 10}
+
+    # Severity component (0-40 points): Based on absolute count
+    # This applies regardless of trend (even declining counts matter if absolute is high)
+    for threshold, points in sorted(thresholds.items(), reverse=True):
+        if total_count >= threshold:
+            score += points
+            break
 
     # Velocity component (0-30 points): % increase baseline to recent
     # Only RISING trends get points (declining = 0, not penalty)
@@ -335,16 +357,23 @@ def score_signal(metrics: Dict) -> Tuple[float, str, str]:
     if velocity < -40:
         score = max(0, score - 10)  # -10 points, but never below 0
 
-    # Determine stage
+    # Determine stage and category based on score and SAE type
+    category_map = {
+        "Death": "drug_death",
+        "Hospitalization": "drug_hospitalization",
+        "Disability": "drug_disability",
+        "LifeThreatening": "drug_life_threatening"
+    }
+
     if score >= 70:
         stage = "HIGH_CONVICTION"
-        category = "drug_death_spike"
+        category = category_map.get(sae_type, "drug_serious_ae") + "_spike"
     elif score >= 40:
         stage = "INVESTIGATE"
-        category = "drug_serious_ae"
+        category = category_map.get(sae_type, "drug_serious_ae")
     elif score >= 20:
         stage = "AWARENESS"
-        category = "drug_emerging"
+        category = category_map.get(sae_type, "drug_emerging")
     else:
         stage = "QUIET"
         category = "drug_monitoring"
@@ -355,6 +384,7 @@ def score_signal(metrics: Dict) -> Tuple[float, str, str]:
 def insert_signal_into_database(
     drug_name: str,
     manufacturer: str,
+    sae_type: str,
     metrics: Dict,
     score: float,
     stage: str,
@@ -362,6 +392,15 @@ def insert_signal_into_database(
 ) -> Optional[int]:
     """
     Insert discovered signal into Safety Intelligence Graph.
+
+    Args:
+        drug_name: Name of the drug
+        manufacturer: Manufacturer name
+        sae_type: Type of SAE (Death, Hospitalization, Disability, LifeThreatening)
+        metrics: Signal metrics
+        score: Calculated score
+        stage: Stage (HIGH_CONVICTION, INVESTIGATE, etc.)
+        category: Category string
 
     Returns:
         candidate_id if successful, None otherwise
@@ -390,28 +429,41 @@ def insert_signal_into_database(
             result = cur.fetchone()
             product_id = result['product_id']
 
-            # 3. Insert/get injury (Death - the primary litigation-worthy outcome)
+            # 3. Insert/get injury based on SAE type
+            injury_category_map = {
+                "Death": "death",
+                "Hospitalization": "hospitalization",
+                "Disability": "disability",
+                "LifeThreatening": "life_threatening"
+            }
+            injury_category = injury_category_map.get(sae_type, "serious_ae")
+
             cur.execute("""
                 INSERT INTO injuries (name, category, metadata_json)
-                VALUES ('Death', 'death', %s)
+                VALUES (%s, %s, %s)
                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
                 RETURNING injury_id
-            """, (Json({}),))
+            """, (sae_type, injury_category, Json({})))
 
             result = cur.fetchone()
             injury_id = result['injury_id']
 
             # 4. Insert product signal
             signal_metadata = {
+                "sae_type": sae_type,
                 "velocity": metrics["velocity"],
                 "acceleration": metrics["acceleration"],
                 "recent_spike": metrics["recent_spike"],
-                "baseline_deaths": metrics["baseline_deaths"],
-                "recent_deaths": metrics["recent_deaths"],
-                "total_serious_aes": metrics["total_serious_aes"],
+                "baseline_count": metrics["baseline_count"],
+                "recent_count": metrics["recent_count"],
+                "total_count": metrics["total_count"],
                 "source": "FAERS",
                 "date_range": f"{START_DATE}-{END_DATE}"
             }
+
+            # Set death_count or hospitalization_count based on SAE type
+            death_count = metrics["total_count"] if sae_type == "Death" else 0
+            hosp_count = metrics["total_count"] if sae_type == "Hospitalization" else 0
 
             cur.execute("""
                 INSERT INTO product_signals (
@@ -425,13 +477,14 @@ def insert_signal_into_database(
                     last_updated_at,
                     metadata_json
                 )
-                VALUES (%s, %s, 'adverse_event_spike', %s, %s, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %s)
+                VALUES (%s, %s, 'adverse_event_spike', %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %s)
                 RETURNING signal_id
             """, (
                 product_id,
                 injury_id,
                 score,
-                metrics["total_deaths"],
+                death_count,
+                hosp_count,
                 Json(signal_metadata)
             ))
 
@@ -461,7 +514,7 @@ def insert_signal_into_database(
                 injury_id,
                 manufacturer,
                 drug_name,
-                "Death",
+                sae_type,  # Use actual SAE type (Death, Hospitalization, etc.)
                 category,
                 score,
                 Json({
@@ -488,8 +541,8 @@ def insert_signal_into_database(
             """, (
                 signal_id,
                 score,
-                metrics["total_deaths"],
-                Json({"source": "FAERS_discovery"})
+                metrics["total_count"],  # Use total_count instead of total_deaths
+                Json({"source": "FAERS_discovery", "sae_type": sae_type})
             ))
 
             return candidate_id
@@ -529,6 +582,9 @@ def discover_and_populate_signals(max_drugs: int = 100, min_score: int = 20):
 
     discovered_signals = []
 
+    # SAE types to track
+    sae_types = ["Death", "Hospitalization", "Disability", "LifeThreatening"]
+
     for i, (drug_name, ae_count) in enumerate(top_drugs, 1):
         print(f"\n[{i}/{len(top_drugs)}] Analyzing: {drug_name}")
         print(f"  Total serious AEs: {ae_count:,}")
@@ -536,33 +592,39 @@ def discover_and_populate_signals(max_drugs: int = 100, min_score: int = 20):
         # Get quarterly breakdown
         quarterly_data = get_quarterly_serious_ae_counts(drug_name)
 
-        # Calculate metrics
-        metrics = calculate_signal_metrics(quarterly_data)
+        # Calculate metrics and score for EACH SAE type
+        drug_signals = []
+        for sae_type in sae_types:
+            metrics = calculate_signal_metrics(quarterly_data, sae_type)
 
-        print(f"  Deaths: {metrics['baseline_deaths']} → {metrics['recent_deaths']} "
-              f"({metrics['velocity']:+.1f}%)")
-        print(f"  Velocity: {metrics['velocity']:+.1f}% | "
-              f"Acceleration: {metrics['acceleration']:+.1f}% | "
-              f"Recent spike: {metrics['recent_spike']:+.1f}%")
+            # Skip if no events reported
+            if metrics["total_count"] == 0:
+                continue
 
-        # Score signal
-        score, stage, category = score_signal(metrics)
+            # Score this SAE type
+            score, stage, category = score_signal(metrics, sae_type)
 
-        print(f"  Score: {score:.1f} - {stage}")
+            print(f"  {sae_type}: {metrics['baseline_count']} → {metrics['recent_count']} "
+                  f"({metrics['velocity']:+.1f}%) - Score: {score:.1f}")
 
-        # Store if above threshold
-        if score >= min_score:
-            discovered_signals.append({
-                "drug_name": drug_name,
-                "manufacturer": "Unknown",  # TODO: Look up from drug database
-                "metrics": metrics,
-                "score": score,
-                "stage": stage,
-                "category": category
-            })
-            print(f"  ✓ SIGNAL DETECTED - Adding to watchlist")
+            # Store if above threshold
+            if score >= min_score:
+                drug_signals.append({
+                    "drug_name": drug_name,
+                    "manufacturer": "Unknown",  # TODO: Look up from drug database
+                    "sae_type": sae_type,
+                    "metrics": metrics,
+                    "score": score,
+                    "stage": stage,
+                    "category": category
+                })
+
+        # Add all signals for this drug that passed threshold
+        if drug_signals:
+            discovered_signals.extend(drug_signals)
+            print(f"  ✓ {len(drug_signals)} SIGNAL(S) DETECTED - Adding to watchlist")
         else:
-            print(f"  ○ Below threshold")
+            print(f"  ○ No signals above threshold")
 
     # Sort by score
     discovered_signals.sort(key=lambda x: x["score"], reverse=True)
@@ -575,12 +637,13 @@ def discover_and_populate_signals(max_drugs: int = 100, min_score: int = 20):
     inserted_count = 0
 
     for i, signal in enumerate(discovered_signals, 1):
-        print(f"[{i}/{len(discovered_signals)}] Inserting: {signal['drug_name']} "
-              f"(Score: {signal['score']:.1f})")
+        print(f"[{i}/{len(discovered_signals)}] Inserting: {signal['drug_name']} - "
+              f"{signal['sae_type']} (Score: {signal['score']:.1f})")
 
         candidate_id = insert_signal_into_database(
             drug_name=signal['drug_name'],
             manufacturer=signal['manufacturer'],
+            sae_type=signal['sae_type'],
             metrics=signal['metrics'],
             score=signal['score'],
             stage=signal['stage'],
@@ -609,9 +672,9 @@ def discover_and_populate_signals(max_drugs: int = 100, min_score: int = 20):
         print("Top 10 signals by score:")
         print()
         for i, sig in enumerate(discovered_signals[:10], 1):
-            print(f"  {i:2d}. {sig['drug_name']:30s} - Score: {sig['score']:5.1f} ({sig['stage']})")
-            print(f"      Deaths: {sig['metrics']['baseline_deaths']} → "
-                  f"{sig['metrics']['recent_deaths']} ({sig['metrics']['velocity']:+.1f}%)")
+            print(f"  {i:2d}. {sig['drug_name']:25s} [{sig['sae_type']:15s}] - Score: {sig['score']:5.1f} ({sig['stage']})")
+            print(f"      Count: {sig['metrics']['baseline_count']} → "
+                  f"{sig['metrics']['recent_count']} ({sig['metrics']['velocity']:+.1f}%)")
 
 
 if __name__ == "__main__":
