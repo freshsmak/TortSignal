@@ -236,10 +236,12 @@ def calculate_signal_metrics(quarterly_data: Dict[str, Dict[str, int]], sae_type
     counts = [quarterly_data[q].get(sae_type, 0) for q in quarters]
     total_count = sum(counts)
 
-    # Calculate velocity (% change from baseline to most recent)
-    if len(counts) >= 4:
-        baseline = statistics.mean(counts[:4])  # First 4 quarters (2024)
-        recent = statistics.mean(counts[-4:])   # Last 4 quarters (2025)
+    # Calculate velocity (% change from baseline to most recent COMPLETE quarters)
+    # Exclude most recent 2 quarters due to FAERS reporting lag (2-3 month delay)
+    # Compare: Q1-Q4 2024 (baseline) vs Q1-Q2 2025 (recent complete)
+    if len(counts) >= 6:
+        baseline = statistics.mean(counts[:4])    # Q1-Q4 2024 (baseline year)
+        recent = statistics.mean(counts[4:6])     # Q1-Q2 2025 (most recent COMPLETE quarters)
 
         if baseline > 0:
             velocity = ((recent - baseline) / baseline) * 100
@@ -257,10 +259,11 @@ def calculate_signal_metrics(quarterly_data: Dict[str, Dict[str, int]], sae_type
 
     acceleration = statistics.mean(qoq_changes) if qoq_changes else 0
 
-    # Recent spike (last 2 quarters vs previous 2)
-    if len(counts) >= 4:
-        prev_avg = statistics.mean(counts[-4:-2])
-        recent_avg = statistics.mean(counts[-2:])
+    # Recent spike (Q1-Q2 2025 vs Q3-Q4 2024)
+    # Compare most recent complete quarters vs previous 2 quarters
+    if len(counts) >= 6:
+        prev_avg = statistics.mean(counts[2:4])   # Q3-Q4 2024
+        recent_avg = statistics.mean(counts[4:6]) # Q1-Q2 2025 (complete)
 
         if prev_avg > 0:
             recent_spike = ((recent_avg - prev_avg) / prev_avg) * 100
@@ -276,7 +279,7 @@ def calculate_signal_metrics(quarterly_data: Dict[str, Dict[str, int]], sae_type
         "recent_spike": round(recent_spike, 1),
         "total_count": total_count,
         "baseline_count": int(statistics.mean(counts[:4])) if len(counts) >= 4 else 0,
-        "recent_count": int(statistics.mean(counts[-4:])) if len(counts) >= 4 else 0,
+        "recent_count": int(statistics.mean(counts[4:6])) if len(counts) >= 6 else 0,  # Q1-Q2 2025 only
     }
 
 
