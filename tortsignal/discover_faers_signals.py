@@ -440,20 +440,12 @@ def insert_signal_into_database(
             product_id = result['product_id']
 
             # 3. Insert/get injury based on SAE type
-            injury_category_map = {
-                "Death": "death",
-                "Hospitalization": "hospitalization",
-                "Disability": "disability",
-                "LifeThreatening": "life_threatening"
-            }
-            injury_category = injury_category_map.get(sae_type, "serious_ae")
-
             cur.execute("""
-                INSERT INTO injuries (name, category, metadata_json)
-                VALUES (%s, %s, %s)
+                INSERT INTO injuries (name, metadata_json)
+                VALUES (%s, %s)
                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
                 RETURNING injury_id
-            """, (sae_type, injury_category, Json({})))
+            """, (sae_type, Json({})))
 
             result = cur.fetchone()
             injury_id = result['injury_id']
