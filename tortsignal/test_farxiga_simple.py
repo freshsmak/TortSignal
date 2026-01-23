@@ -93,7 +93,7 @@ def insert_farxiga_signal():
                 ON CONFLICT (name) DO UPDATE SET ticker = EXCLUDED.ticker
                 RETURNING defendant_id
             """)
-            defendant_id = cur.fetchone()[0]
+            defendant_id = cur.fetchone()['defendant_id']
             print(f"✓ AstraZeneca (ID: {defendant_id})")
 
             # 3. Insert product (FARXIGA)
@@ -104,7 +104,7 @@ def insert_farxiga_signal():
                 ON CONFLICT (name) DO UPDATE SET product_type = EXCLUDED.product_type
                 RETURNING product_id
             """)
-            product_id = cur.fetchone()[0]
+            product_id = cur.fetchone()['product_id']
             print(f"✓ FARXIGA (ID: {product_id})")
 
             # 4. Insert injury (Death)
@@ -117,10 +117,10 @@ def insert_farxiga_signal():
             """)
             result = cur.fetchone()
             if result:
-                injury_id = result[0]
+                injury_id = result['injury_id']
             else:
                 cur.execute("SELECT injury_id FROM injuries WHERE name = 'Death'")
-                injury_id = cur.fetchone()[0]
+                injury_id = cur.fetchone()['injury_id']
             print(f"✓ Death (ID: {injury_id})")
 
             # 5. Insert product_signal
@@ -165,7 +165,7 @@ def insert_farxiga_signal():
                 'worsening',
                 'active'
             ))
-            signal_id = cur.fetchone()[0]
+            signal_id = cur.fetchone()['signal_id']
             print(f"✓ Product signal (ID: {signal_id})")
             print(f"  - Severity score: {severity_score}")
             print(f"  - Death count: {current_deaths} (+{death_pct:.0f}%)")
@@ -219,7 +219,7 @@ def insert_farxiga_signal():
                 '{"velocity_7d": 0, "velocity_30d": 318, "acceleration_ratio": 0.8}',
                 f'+{death_pct:.0f}% death spike detected in Q4 2024. {current_deaths} deaths vs {baseline_deaths} baseline.'
             ))
-            candidate_id = cur.fetchone()[0]
+            candidate_id = cur.fetchone()['candidate_id']
             print(f"✓ Candidate (ID: {candidate_id})")
             print(f"  - Score: {severity_score} (HIGH CONVICTION)")
 
