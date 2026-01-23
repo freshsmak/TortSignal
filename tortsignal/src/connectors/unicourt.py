@@ -9,6 +9,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Generator
 
+logger = logging.getLogger(__name__)
+
 try:
     import unicourt
     from unicourt import Authentication, CaseSearch
