@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from typing import Dict, List, Tuple, Optional
 import statistics
+from psycopg.types.json import Json
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
@@ -278,6 +279,11 @@ def score_signal(metrics: Dict) -> Tuple[float, str, str]:
     """
     score = 0
 
+    # FILTER: Declining trends are not litigation-worthy
+    # If death rate is DECREASING, return minimum score (drug getting safer)
+    if metrics["velocity"] < 0:
+        return (0.0, "QUIET", "drug_declining")
+
     # Severity component (0-40 points): Based on absolute death counts
     if metrics["total_deaths"] >= 500:
         score += 40
@@ -361,7 +367,7 @@ def insert_signal_into_database(
                 VALUES (%s, 'pharmaceutical', %s)
                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
                 RETURNING defendant_id
-            """, (manufacturer, {}))
+            """, (manufacturer, Json({})))
 
             result = cur.fetchone()
             defendant_id = result['defendant_id']
@@ -372,7 +378,7 @@ def insert_signal_into_database(
                 VALUES (%s, %s, 'pharmaceutical', %s)
                 ON CONFLICT (defendant_id, name) DO UPDATE SET name = EXCLUDED.name
                 RETURNING product_id
-            """, (defendant_id, drug_name, {}))
+            """, (defendant_id, drug_name, Json({})))
 
             result = cur.fetchone()
             product_id = result['product_id']
@@ -383,7 +389,7 @@ def insert_signal_into_database(
                 VALUES ('Death', 'death', %s)
                 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
                 RETURNING injury_id
-            """, ({},))
+            """, (Json({}),))
 
             result = cur.fetchone()
             injury_id = result['injury_id']
@@ -419,7 +425,7 @@ def insert_signal_into_database(
                 injury_id,
                 score,
                 metrics["total_deaths"],
-                signal_metadata
+                Json(signal_metadata)
             ))
 
             result = cur.fetchone()
@@ -451,11 +457,11 @@ def insert_signal_into_database(
                 "Death",
                 category,
                 score,
-                {
+                Json({
                     "velocity_7d": metrics["velocity"],
                     "breadth_states": 50,  # FAERS is national
                     "signal_metadata": signal_metadata
-                }
+                })
             ))
 
             result = cur.fetchone()
@@ -476,7 +482,7 @@ def insert_signal_into_database(
                 signal_id,
                 score,
                 metrics["total_deaths"],
-                {"source": "FAERS_discovery"}
+                Json({"source": "FAERS_discovery"})
             ))
 
             return candidate_id
