@@ -65,7 +65,8 @@ BLACKLIST_DRUG_CLASSES = [
     'antimicrobial', 'antibiotic', 'antibacterial',
 ]
 
-# Indication severity scores (1=cosmetic/lifestyle, 10=terminal)
+# Indication severity scores (1=cosmetic/lifestyle, 10=terminal/supplement)
+# Supplements at 10 means very low litigation risk UNLESS unexpectedness is extreme
 INDICATION_SCORES = {
     'cosmetic': 1, 'beauty': 1, 'aesthetic': 1,
     'weight loss': 2, 'obesity': 2, 'overweight': 2,
@@ -83,7 +84,17 @@ INDICATION_SCORES = {
     'hiv': 8, 'aids': 8, 'human immunodeficiency': 8,
     'cancer': 9, 'carcinoma': 9, 'tumor': 9, 'malignancy': 9, 'oncology': 9, 'neoplasm': 9,
     'transplant': 9, 'organ rejection': 9,
+    'supplement': 10, 'vitamin': 10, 'mineral': 10, 'dietary supplement': 10,
 }
+
+# Supplement/vitamin keywords for detection (low litigation unless contaminated)
+# Detects via drug name matching
+SUPPLEMENT_KEYWORDS = [
+    'calcium', 'folic acid', 'folate', 'vitamin', 'multivitamin', 'cholecalciferol',
+    'cyanocobalamin', 'ascorbic acid', 'iron', 'zinc', 'magnesium',
+    'potassium', 'supplement', 'dietary supplement', 'mineral',
+    'thiamine', 'riboflavin', 'niacin', 'pyridoxine', 'biotin',
+]
 
 # Expected baseline death rates per 10,000 patients by drug class
 BASELINE_DEATH_RATES = {
@@ -96,6 +107,8 @@ BASELINE_DEATH_RATES = {
     'heartburn': 1,             # 0.01% (essentially zero)
     'weight loss': 1,           # Near zero expected
     'cosmetic': 0.1,            # Near zero expected
+    'supplement': 0.01,         # Near zero (unless contaminated - L-Tryptophan pattern)
+    'vitamin': 0.01,            # Near zero
 }
 
 
@@ -103,6 +116,28 @@ def get_api_key() -> str:
     """Get OpenFDA API key from config."""
     config = get_config()
     return config.openfda.api_key
+
+
+def is_supplement(drug_name: str, drug_metadata: Dict) -> bool:
+    """
+    Detect if a drug is a supplement/vitamin.
+
+    Args:
+        drug_name: Name of drug
+        drug_metadata: Enriched metadata dict
+
+    Returns:
+        True if supplement detected
+    """
+    drug_name_lower = drug_name.lower()
+    drug_class_lower = drug_metadata.get('drug_class', '').lower()
+
+    # Check drug name
+    for keyword in SUPPLEMENT_KEYWORDS:
+        if keyword in drug_name_lower or keyword in drug_class_lower:
+            return True
+
+    return False
 
 
 def enrich_drug_metadata(drug_name: str) -> Dict:
@@ -201,6 +236,12 @@ def enrich_drug_metadata(drug_name: str) -> Dict:
             except:
                 pass
 
+        # Check if supplement/vitamin (overrides indication)
+        # This catches calcium, folic acid, vitamins, etc.
+        if is_supplement(drug_name, metadata):
+            metadata['indication'] = 'supplement'
+            metadata['drug_class'] = 'supplement'
+
         return metadata
 
     except Exception as e:
@@ -228,23 +269,26 @@ def check_drug_class_filter(drug_metadata: Dict) -> float:
     """
     Return multiplier based on drug class whitelist/blacklist.
 
-    Returns:
-        1.5 = whitelisted (high litigation risk)
-        0.1 = blacklisted (low litigation risk)
+    SOFTENED multipliers - use history as guide, not constraint:
+        1.2 = whitelisted (gentle boost for known high-risk classes)
+        0.7 = blacklisted (gentle penalty, not elimination)
         1.0 = neutral
+
+    This allows discovery of new drug class patterns while still using
+    historical MDL data to inform scoring.
     """
     drug_class = drug_metadata.get('drug_class', '').lower()
     pharm_classes = [pc.lower() for pc in drug_metadata.get('pharmacologic_class', [])]
 
-    # Check whitelist
+    # Check whitelist (gentle boost)
     for wl_class in WHITELIST_DRUG_CLASSES:
         if wl_class in drug_class or any(wl_class in pc for pc in pharm_classes):
-            return 1.5
+            return 1.2
 
-    # Check blacklist
+    # Check blacklist (gentle penalty, not elimination)
     for bl_class in BLACKLIST_DRUG_CLASSES:
         if bl_class in drug_class or any(bl_class in pc for pc in pharm_classes):
-            return 0.1
+            return 0.7
 
     return 1.0  # Neutral
 
@@ -267,10 +311,15 @@ def get_litigation_window_score(approval_year: int) -> int:
         return 3  # Old drug
 
 
-def is_unexpected_sae_rate(drug_metadata: Dict, observed_deaths_per_10k: float) -> bool:
+def get_unexpectedness_multiplier(drug_metadata: Dict, observed_deaths_per_10k: float) -> float:
     """
-    Return True if death rate exceeds expected baseline for drug class.
-    Uses 2x baseline as threshold.
+    Calculate unexpectedness multiplier based on observed vs expected death rates.
+
+    Returns:
+        1.0 = expected rates
+        1.5 = 2-10x expected (moderate concern)
+        2.0 = 10-100x expected (high concern)
+        3.0 = 100x+ expected (extreme concern - contamination pattern)
     """
     drug_class = drug_metadata.get('drug_class', 'unknown').lower()
 
@@ -281,7 +330,24 @@ def is_unexpected_sae_rate(drug_metadata: Dict, observed_deaths_per_10k: float) 
             expected = baseline
             break
 
-    return observed_deaths_per_10k > (expected * 2)
+    if expected == 0 or observed_deaths_per_10k == 0:
+        return 1.0
+
+    # Calculate ratio
+    ratio = observed_deaths_per_10k / expected
+
+    if ratio > 100:
+        # Extreme unexpectedness (L-Tryptophan contamination pattern)
+        return 3.0
+    elif ratio > 10:
+        # High unexpectedness
+        return 2.0
+    elif ratio > 2:
+        # Moderate unexpectedness
+        return 1.5
+    else:
+        # Expected or below expected
+        return 1.0
 
 
 def calculate_litigation_risk_score(
@@ -307,8 +373,8 @@ def calculate_litigation_risk_score(
     Returns:
         Float 0-100 litigation risk score
     """
-    # Base score from FAERS velocity (cap at 40)
-    base_score = min(pharma_score * 0.5, 40)
+    # Base score from FAERS velocity (cap at 50)
+    base_score = min(pharma_score * 0.6, 50)
 
     # Indication severity factor (inverse - cosmetic=1.0, cancer=0.0)
     indication_severity = get_indication_severity(drug_metadata)
@@ -317,25 +383,32 @@ def calculate_litigation_risk_score(
     # Drug class multiplier
     class_multiplier = check_drug_class_filter(drug_metadata)
 
-    # Timeline score (0-20 points)
-    timeline_score = get_litigation_window_score(drug_metadata['approval_year']) * 2
+    # Timeline score (0-25 points) - sweet spot drugs get significant boost
+    timeline_score = get_litigation_window_score(drug_metadata['approval_year']) * 2.5
 
     # Unexpected SAE multiplier
     total_count = faers_metrics.get('total_count', 0)
+    sae_multiplier = 1.0
+    contamination_spike_bonus = 0
+
     if total_count > 0 and faers_metrics.get('sae_type') == 'Death':
         # Rough estimate: assume 1M prescriptions per year for popular drugs
         observed_rate = (total_count / 100000) * 10000  # Deaths per 10K
-        if is_unexpected_sae_rate(drug_metadata, observed_rate):
-            sae_multiplier = 1.5
-        else:
-            sae_multiplier = 1.0
-    else:
-        sae_multiplier = 1.0
+        sae_multiplier = get_unexpectedness_multiplier(drug_metadata, observed_rate)
+
+        # Special handling: Contamination detection for supplements
+        # Use VELOCITY (sudden spike), not absolute rates, to avoid confounding
+        # L-Tryptophan had velocity spike, not just high absolute deaths
+        velocity = faers_metrics.get('velocity', 0)
+        if indication_severity >= 9 and velocity > 100:  # Supplement with 100%+ spike
+            # Sudden spike in supplement deaths = contamination pattern
+            contamination_spike_bonus = 50
 
     # Composite score
     litigation_score = (
         (base_score * indication_factor * class_multiplier * sae_multiplier) +
-        timeline_score
+        timeline_score +
+        contamination_spike_bonus
     )
 
     return min(litigation_score, 100)  # Cap at 100
