@@ -389,9 +389,11 @@ def get_top_drugs_by_serious_aes(limit: int = 500) -> List[Tuple[str, int]]:
 
     # Query for drugs with serious outcomes in date range
     # Serious codes: 1=Death, 2=Life-threatening, 3=Hospitalization
+    # drugcharacterization:1 = Primary Suspect (exclude concomitant medications)
     search_query = (
         f"receivedate:[{START_DATE}+TO+{END_DATE}]"
         "+AND+serious:1"
+        "+AND+patient.drug.drugcharacterization:1"
         "+AND+(seriousnessdeath:1+OR+seriousnesshospitalization:1+OR+seriousnesslifethreatening:1)"
     )
 
@@ -469,10 +471,11 @@ def get_quarterly_serious_ae_counts(drug_name: str) -> Dict[str, Dict[str, int]]
             "Disability": 0,
         }
 
-        # Query for deaths
+        # Query for deaths (Primary Suspect only - excludes concomitant meds)
         death_query = (
             f'receivedate:[{start}+TO+{end}]'
             f'+AND+patient.drug.medicinalproduct:"{drug_escaped}"'
+            f'+AND+patient.drug.drugcharacterization:1'
             f'+AND+seriousnessdeath:1'
         )
 
@@ -480,10 +483,11 @@ def get_quarterly_serious_ae_counts(drug_name: str) -> Dict[str, Dict[str, int]]
         if death_result and "meta" in death_result:
             counts["Death"] = death_result["meta"]["results"]["total"]
 
-        # Query for hospitalizations
+        # Query for hospitalizations (Primary Suspect only)
         hosp_query = (
             f'receivedate:[{start}+TO+{end}]'
             f'+AND+patient.drug.medicinalproduct:"{drug_escaped}"'
+            f'+AND+patient.drug.drugcharacterization:1'
             f'+AND+seriousnesshospitalization:1'
         )
 
@@ -491,10 +495,11 @@ def get_quarterly_serious_ae_counts(drug_name: str) -> Dict[str, Dict[str, int]]
         if hosp_result and "meta" in hosp_result:
             counts["Hospitalization"] = hosp_result["meta"]["results"]["total"]
 
-        # Query for life-threatening
+        # Query for life-threatening (Primary Suspect only)
         life_query = (
             f'receivedate:[{start}+TO+{end}]'
             f'+AND+patient.drug.medicinalproduct:"{drug_escaped}"'
+            f'+AND+patient.drug.drugcharacterization:1'
             f'+AND+seriousnesslifethreatening:1'
         )
 
@@ -502,10 +507,11 @@ def get_quarterly_serious_ae_counts(drug_name: str) -> Dict[str, Dict[str, int]]
         if life_result and "meta" in life_result:
             counts["LifeThreatening"] = life_result["meta"]["results"]["total"]
 
-        # Query for disability
+        # Query for disability (Primary Suspect only)
         disability_query = (
             f'receivedate:[{start}+TO+{end}]'
             f'+AND+patient.drug.medicinalproduct:"{drug_escaped}"'
+            f'+AND+patient.drug.drugcharacterization:1'
             f'+AND+seriousnessdisabling:1'
         )
 
