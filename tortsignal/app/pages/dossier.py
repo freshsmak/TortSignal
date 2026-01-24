@@ -31,16 +31,24 @@ def show():
     # Load dossier data
     try:
         from db_helpers import get_dossier
+
+        # Debug: Show what candidate_id we're loading
+        print(f"Loading dossier for candidate_id: {st.session_state.selected_candidate_id}")
+
         dossier_data = get_dossier(st.session_state.selected_candidate_id)
 
         if not dossier_data:
             st.error("Candidate not found.")
+            print(f"Candidate not found: {st.session_state.selected_candidate_id}")
             return
 
         render_dossier(dossier_data)
 
     except Exception as e:
         st.error(f"Error loading dossier: {str(e)}")
+        print(f"Error loading dossier: {e}")
+        import traceback
+        traceback.print_exc()
         st.info("Showing sample data for demo purposes")
         dossier_data = get_sample_dossier()
         render_dossier(dossier_data)
@@ -286,7 +294,7 @@ def get_sample_dossier() -> dict:
     """Return sample dossier data for demo - EARLY SIGNAL, not formed MDL."""
     return {
         'candidate': {
-            'cluster_id': '1',
+            'candidate_id': '1',
             'defendant_text': 'L\'Oréal USA',
             'product_text': 'Dark & Lovely Hair Relaxer',
             'injury_text': 'Uterine Cancer',
