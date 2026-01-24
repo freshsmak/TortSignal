@@ -70,16 +70,18 @@ INDICATION_SCORES = {
     'cosmetic': 1, 'beauty': 1, 'aesthetic': 1,
     'weight loss': 2, 'obesity': 2, 'overweight': 2,
     'heartburn': 2, 'gerd': 2, 'reflux': 2,
+    'erectile dysfunction': 2, 'impotence': 2,
     'type 2 diabetes': 3, 'diabetes mellitus': 3, 'diabetes': 3,
     'contraception': 3, 'birth control': 3,
-    'erectile dysfunction': 2, 'ed': 2, 'impotence': 2,
     'atrial fibrillation': 4, 'afib': 4, 'a-fib': 4,
+    'hypertension': 4, 'high blood pressure': 4, 'cholesterol': 4,
+    'inflammation': 5, 'inflammatory': 5, 'arthritis': 5, 'rheumatoid': 5,
+    'pain': 4, 'analgesic': 4,
     'deep vein thrombosis': 5, 'dvt': 5, 'thrombosis': 5,
-    'hypertension': 4, 'high blood pressure': 4,
     'schizophrenia': 6, 'psychosis': 6,
     'bipolar': 6, 'bipolar disorder': 6,
     'hiv': 8, 'aids': 8, 'human immunodeficiency': 8,
-    'cancer': 9, 'carcinoma': 9, 'tumor': 9, 'malignancy': 9,
+    'cancer': 9, 'carcinoma': 9, 'tumor': 9, 'malignancy': 9, 'oncology': 9, 'neoplasm': 9,
     'transplant': 9, 'organ rejection': 9,
 }
 
@@ -159,10 +161,25 @@ def enrich_drug_metadata(drug_name: str) -> Dict:
 
             # Extract likely indication from text
             indication_lower = indication_text.lower()
-            for indication_key in INDICATION_SCORES.keys():
+
+            # Try to match indication keywords (sorted by specificity - longest first)
+            sorted_indications = sorted(INDICATION_SCORES.keys(), key=len, reverse=True)
+            for indication_key in sorted_indications:
                 if indication_key in indication_lower:
                     metadata['indication'] = indication_key
                     break
+
+        # Fallback: Try to infer from drug class
+        if metadata['indication'] == 'unknown' and metadata['drug_class'] != 'unknown':
+            drug_class_lower = metadata['drug_class'].lower()
+            if 'anticoagulant' in drug_class_lower or 'factor xa' in drug_class_lower:
+                metadata['indication'] = 'atrial fibrillation'
+            elif 'corticosteroid' in drug_class_lower:
+                metadata['indication'] = 'inflammation'
+            elif 'statin' in drug_class_lower or 'hmg-coa reductase' in drug_class_lower:
+                metadata['indication'] = 'hypertension'
+            elif 'diuretic' in drug_class_lower:
+                metadata['indication'] = 'hypertension'
 
         # Extract approval year from application number (if available)
         # Format: NXXXXXXX where N=type (N=NDA, A=ANDA, B=BLA), XXXXXX=sequential number
