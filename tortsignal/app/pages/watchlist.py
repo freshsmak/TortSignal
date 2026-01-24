@@ -121,11 +121,17 @@ def show():
         # Show sample data for demo
         st.markdown("### Sample Data (Demo)")
         df = get_sample_data()
-        render_watchlist_table(df)
+        render_watchlist_table(df, is_sample=True)
 
 
-def render_watchlist_table(df: pd.DataFrame):
-    """Render the main watchlist table."""
+def render_watchlist_table(df: pd.DataFrame, is_sample: bool = False):
+    """Render the main watchlist table.
+
+    Args:
+        df: DataFrame with watchlist data
+        is_sample: If True, use different key prefix to avoid conflicts
+    """
+    key_prefix = "sample_view_" if is_sample else "view_"
 
     # Format the dataframe for display
     for idx, row in df.iterrows():
@@ -157,8 +163,8 @@ def render_watchlist_table(df: pd.DataFrame):
                 st.caption(updated.strftime('%m/%d/%y') if pd.notna(updated) else 'N/A')
 
         with col7:
-            if st.button("View", key=f"view_{idx}"):
-                st.session_state.selected_candidate_id = row['cluster_id']
+            if st.button("View", key=f"{key_prefix}{idx}"):
+                st.session_state.selected_candidate_id = row['candidate_id']
                 st.session_state.current_page = 'dossier'
                 st.rerun()
 
@@ -199,7 +205,7 @@ def get_sample_data() -> pd.DataFrame:
     """Return sample data for demo purposes - EARLY SIGNALS, not formed MDLs."""
     return pd.DataFrame([
         {
-            'cluster_id': '1',
+            'candidate_id': '1',
             'defendant_text': 'L\'Oréal USA',
             'product_text': 'Dark & Lovely Relaxer',
             'injury_text': 'Uterine Cancer',
@@ -211,7 +217,7 @@ def get_sample_data() -> pd.DataFrame:
             'breadth_states': 4
         },
         {
-            'cluster_id': '2',
+            'candidate_id': '2',
             'defendant_text': 'Eli Lilly',
             'product_text': 'Mounjaro',
             'injury_text': 'Pancreatitis',
@@ -223,7 +229,7 @@ def get_sample_data() -> pd.DataFrame:
             'breadth_states': 3
         },
         {
-            'cluster_id': '3',
+            'candidate_id': '3',
             'defendant_text': 'Philips',
             'product_text': 'DreamStation 2',
             'injury_text': 'Chemical Exposure',
@@ -235,7 +241,7 @@ def get_sample_data() -> pd.DataFrame:
             'breadth_states': 5
         },
         {
-            'cluster_id': '4',
+            'candidate_id': '4',
             'defendant_text': 'DuPont',
             'product_text': 'GenX Chemicals',
             'injury_text': 'Thyroid Disease',
@@ -247,7 +253,7 @@ def get_sample_data() -> pd.DataFrame:
             'breadth_states': 2
         },
         {
-            'cluster_id': '5',
+            'candidate_id': '5',
             'defendant_text': 'Abbott Labs',
             'product_text': 'Similac Infant Formula',
             'injury_text': 'NEC',
@@ -259,7 +265,7 @@ def get_sample_data() -> pd.DataFrame:
             'breadth_states': 3
         },
         {
-            'cluster_id': '6',
+            'candidate_id': '6',
             'defendant_text': 'Sanofi',
             'product_text': 'Lantus',
             'injury_text': 'Bladder Cancer',
@@ -271,7 +277,7 @@ def get_sample_data() -> pd.DataFrame:
             'breadth_states': 2
         },
         {
-            'cluster_id': '7',
+            'candidate_id': '7',
             'defendant_text': 'Bayer AG',
             'product_text': 'Essure',
             'injury_text': 'Device Migration',
