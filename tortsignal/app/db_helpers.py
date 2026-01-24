@@ -156,7 +156,7 @@ def get_watchlist(filters: dict) -> pd.DataFrame:
             df = pd.DataFrame(
                 rows,
                 columns=[
-                    'cluster_id', 'defendant_text', 'product_text', 'injury_text',
+                    'candidate_id', 'defendant_text', 'product_text', 'injury_text',
                     'score_total', 'stage', 'category', 'last_updated',
                     'velocity_7d', 'breadth_states'
                 ]
@@ -174,7 +174,7 @@ def get_dossier(cluster_id: str) -> dict:
     Fetch full dossier data for a single candidate.
 
     Args:
-        cluster_id: UUID of the candidate cluster
+        cluster_id: UUID of the candidate (actually candidate_id)
 
     Returns:
         Dictionary with candidate, timeline, evidence, injuries, metrics
@@ -184,7 +184,7 @@ def get_dossier(cluster_id: str) -> dict:
 
     try:
         with get_cursor() as cur:
-            # Fetch candidate
+            # Fetch candidate (cast to UUID in case it's passed as string)
             cur.execute("""
                 SELECT
                     candidate_id,
@@ -199,15 +199,15 @@ def get_dossier(cluster_id: str) -> dict:
                     last_seen_at as last_updated,
                     metrics_json
                 FROM candidates
-                WHERE candidate_id = %s
-            """, (cluster_id,))
+                WHERE candidate_id = %s::uuid
+            """, (str(cluster_id),))
 
             row = cur.fetchone()
             if not row:
                 return None
 
             candidate = {
-                'cluster_id': row[0],
+                'candidate_id': row[0],
                 'defendant_text': row[1],
                 'product_text': row[2],
                 'injury_text': row[3],
@@ -221,88 +221,23 @@ def get_dossier(cluster_id: str) -> dict:
                 'why_now': generate_why_now(row[10] or {})
             }
 
-            # Fetch timeline (signal events)
-            cur.execute("""
-                SELECT
-                    event_id,
-                    event_type,
-                    detected_at,
-                    snippet
-                FROM signal_events
-                WHERE cluster_id = %s
-                ORDER BY detected_at DESC
-                LIMIT 50
-            """, (cluster_id,))
+            # Fetch timeline (signal events) - will be empty for FAERS discovery MVP
+            # Note: signal_events links to tort_clusters, not candidates directly
+            timeline = []  # TODO: Link product_signals to timeline when tort_clusters created
 
-            timeline = [
-                {
-                    'event_id': r[0],
-                    'event_type': r[1],
-                    'detected_at': r[2].strftime('%Y-%m-%d') if r[2] else '',
-                    'snippet': r[3] or ''
-                }
-                for r in cur.fetchall()
-            ]
+            # Evidence and injuries will be empty for FAERS discovery MVP
+            # TODO: Link when candidate_evidence table is populated
+            evidence = []
+            injuries = []
 
-            # Fetch evidence (source documents)
-            cur.execute("""
-                SELECT
-                    document_id,
-                    source_type,
-                    title,
-                    filed_date,
-                    external_url,
-                    snippet
-                FROM source_documents
-                WHERE cluster_id = %s
-                ORDER BY filed_date DESC
-                LIMIT 100
-            """, (cluster_id,))
-
-            evidence = [
-                {
-                    'document_id': r[0],
-                    'source_type': r[1],
-                    'title': r[2] or 'Untitled',
-                    'filed_date': r[3].strftime('%Y-%m-%d') if r[3] else '',
-                    'external_url': r[4] or '',
-                    'snippet': r[5] or ''
-                }
-                for r in cur.fetchall()
-            ]
-
-            # Fetch injury distribution
-            cur.execute("""
-                SELECT
-                    injury_normalized,
-                    COUNT(*) as count
-                FROM source_documents
-                WHERE cluster_id = %s
-                  AND injury_normalized IS NOT NULL
-                GROUP BY injury_normalized
-                ORDER BY count DESC
-                LIMIT 10
-            """, (cluster_id,))
-
-            injury_rows = cur.fetchall()
-            total_injuries = sum(r[1] for r in injury_rows)
-            injuries = [
-                {
-                    'injury': r[0],
-                    'count': r[1],
-                    'pct': r[1] / total_injuries if total_injuries > 0 else 0
-                }
-                for r in injury_rows
-            ]
-
-            # Extract metrics
-            metrics_data = candidate.get('metrics', {}) or {}
+            # Extract metrics from the row data (index 10 is metrics_json)
+            metrics_json = row[10] or {}
             metrics = {
-                'velocity_7d': int(metrics_data.get('velocity_7d', 0)),
-                'velocity_28d': int(metrics_data.get('velocity_28d', 0)),
-                'accel_ratio': float(metrics_data.get('accel_ratio', 0)),
-                'breadth_states': int(metrics_data.get('breadth_states', 0)),
-                'breadth_firms': int(metrics_data.get('breadth_firms', 0))
+                'velocity_7d': int(metrics_json.get('velocity_7d', 0)),
+                'velocity_28d': int(metrics_json.get('velocity_28d', 0)),
+                'accel_ratio': float(metrics_json.get('accel_ratio', 0)),
+                'breadth_states': int(metrics_json.get('breadth_states', 0)),
+                'breadth_firms': int(metrics_json.get('breadth_firms', 0))
             }
 
             return {
@@ -356,7 +291,7 @@ def get_sample_watchlist() -> pd.DataFrame:
     """Return sample watchlist data for demo - EARLY SIGNALS, not formed MDLs."""
     return pd.DataFrame([
         {
-            'cluster_id': '1',
+            'candidate_id': '1',
             'defendant_text': 'L\'Oréal USA',
             'product_text': 'Dark & Lovely Relaxer',
             'injury_text': 'Uterine Cancer',
@@ -368,7 +303,7 @@ def get_sample_watchlist() -> pd.DataFrame:
             'breadth_states': 4
         },
         {
-            'cluster_id': '2',
+            'candidate_id': '2',
             'defendant_text': 'Eli Lilly',
             'product_text': 'Mounjaro',
             'injury_text': 'Pancreatitis',
@@ -380,7 +315,7 @@ def get_sample_watchlist() -> pd.DataFrame:
             'breadth_states': 3
         },
         {
-            'cluster_id': '3',
+            'candidate_id': '3',
             'defendant_text': 'Philips',
             'product_text': 'DreamStation 2',
             'injury_text': 'Chemical Exposure',
@@ -392,7 +327,7 @@ def get_sample_watchlist() -> pd.DataFrame:
             'breadth_states': 5
         },
         {
-            'cluster_id': '4',
+            'candidate_id': '4',
             'defendant_text': 'Abbott Labs',
             'product_text': 'Similac Infant Formula',
             'injury_text': 'NEC',
@@ -410,7 +345,7 @@ def get_sample_dossier() -> dict:
     """Return sample dossier for demo - EARLY SIGNAL."""
     return {
         'candidate': {
-            'cluster_id': '1',
+            'candidate_id': '1',
             'defendant_text': 'L\'Oréal USA',
             'product_text': 'Dark & Lovely Hair Relaxer',
             'injury_text': 'Uterine Cancer',
