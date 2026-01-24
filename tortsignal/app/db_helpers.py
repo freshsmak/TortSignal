@@ -271,15 +271,35 @@ def generate_why_now(metrics: dict) -> str:
     """Generate a why now narrative from metrics."""
     parts = []
 
-    velocity_7d = int(metrics.get('velocity_7d', 0))
-    breadth_states = int(metrics.get('breadth_states', 0))
-    breadth_firms = int(metrics.get('breadth_firms', 0))
+    # Check if this is FAERS data (has signal_metadata) or litigation data
+    signal_metadata = metrics.get('signal_metadata', {})
 
-    if velocity_7d > 0:
-        parts.append(f"{velocity_7d} new filings in last 7 days")
+    if signal_metadata:
+        # FAERS discovery data
+        velocity = signal_metadata.get('velocity', 0)
+        baseline = signal_metadata.get('baseline_count', 0)
+        recent = signal_metadata.get('recent_count', 0)
+        sae_type = signal_metadata.get('sae_type', 'adverse events')
 
-    if breadth_states > 0 or breadth_firms > 0:
-        parts.append(f"across {breadth_states} states and {breadth_firms} plaintiff firms")
+        if velocity > 0:
+            parts.append(f"{sae_type} increased {velocity:+.1f}% ({baseline:,} → {recent:,})")
+        elif velocity < 0:
+            parts.append(f"{sae_type} changed {velocity:+.1f}% ({baseline:,} → {recent:,})")
+        else:
+            parts.append(f"{recent:,} {sae_type.lower()} reported")
+
+        parts.append("FAERS signal detected via statistical analysis")
+    else:
+        # Litigation data
+        velocity_7d = int(metrics.get('velocity_7d', 0))
+        breadth_states = int(metrics.get('breadth_states', 0))
+        breadth_firms = int(metrics.get('breadth_firms', 0))
+
+        if velocity_7d > 0:
+            parts.append(f"{velocity_7d} new filings in last 7 days")
+
+        if breadth_states > 0 or breadth_firms > 0:
+            parts.append(f"across {breadth_states} states and {breadth_firms} plaintiff firms")
 
     if not parts:
         return "Signal detected based on available evidence"
