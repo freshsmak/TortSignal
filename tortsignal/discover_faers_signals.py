@@ -538,23 +538,8 @@ def insert_signal_into_database(
             result = cur.fetchone()
             candidate_id = result['candidate_id']
 
-            # 6. Insert signal event
-            cur.execute("""
-                INSERT INTO signal_events (
-                    signal_id,
-                    event_type,
-                    severity,
-                    count,
-                    recorded_at,
-                    metadata_json
-                )
-                VALUES (%s, 'adverse_event', %s, %s, CURRENT_TIMESTAMP, %s)
-            """, (
-                signal_id,
-                score,
-                metrics["total_count"],  # Use total_count instead of total_deaths
-                Json({"source": "FAERS_discovery", "sae_type": sae_type})
-            ))
+            # Note: signal_events is for tort_clusters (litigation tracking), not product_signals
+            # FAERS discovery creates product_signals + candidates, which is sufficient for MVP
 
             return candidate_id
 
