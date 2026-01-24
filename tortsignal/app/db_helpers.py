@@ -36,29 +36,29 @@ def get_quick_stats() -> dict:
         with get_cursor() as cur:
             # Total active candidates
             cur.execute("""
-                SELECT COUNT(*)
+                SELECT COUNT(*) as count
                 FROM candidates
                 WHERE status != 'rejected'
             """)
-            total = cur.fetchone()[0]
+            total = cur.fetchone()['count']
 
             # High conviction count
             cur.execute("""
-                SELECT COUNT(*)
+                SELECT COUNT(*) as count
                 FROM candidates
                 WHERE status != 'rejected'
                   AND score_total >= 70
             """)
-            high_conviction = cur.fetchone()[0]
+            high_conviction = cur.fetchone()['count']
 
             # New in last 7 days
             cur.execute("""
-                SELECT COUNT(*)
+                SELECT COUNT(*) as count
                 FROM candidates
                 WHERE status != 'rejected'
-                  AND created_at >= NOW() - INTERVAL '7 days'
+                  AND first_seen_at >= NOW() - INTERVAL '7 days'
             """)
-            new_7d = cur.fetchone()[0]
+            new_7d = cur.fetchone()['count']
 
             return {
                 'total': total,
