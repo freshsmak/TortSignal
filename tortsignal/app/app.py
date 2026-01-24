@@ -160,18 +160,27 @@ def main():
 
         st.markdown("---")
 
-        # Navigation
+        # Navigation - sync radio with session state
+        page_options = ["Watchlist", "Dossier"]
+        page_map = {"Watchlist": 'watchlist', "Dossier": 'dossier'}
+        reverse_map = {'watchlist': "Watchlist", 'dossier': "Dossier"}
+
+        # Determine current index based on session state
+        current_selection = reverse_map.get(st.session_state.current_page, "Watchlist")
+        current_index = page_options.index(current_selection)
+
+        def on_nav_change():
+            """Callback when navigation changes."""
+            selected = st.session_state.nav_radio
+            st.session_state.current_page = page_map[selected]
+
         page = st.radio(
             "Navigation",
-            ["Watchlist", "Dossier"],
-            index=0 if st.session_state.current_page == 'watchlist' else 1,
-            key="nav_radio"
+            page_options,
+            index=current_index,
+            key="nav_radio",
+            on_change=on_nav_change
         )
-
-        if page == "Watchlist":
-            st.session_state.current_page = 'watchlist'
-        elif page == "Dossier":
-            st.session_state.current_page = 'dossier'
 
         st.markdown("---")
 
