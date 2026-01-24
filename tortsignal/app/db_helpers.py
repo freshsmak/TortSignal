@@ -207,18 +207,18 @@ def get_dossier(cluster_id: str) -> dict:
                 return None
 
             candidate = {
-                'candidate_id': row[0],
-                'defendant_text': row[1],
-                'product_text': row[2],
-                'injury_text': row[3],
-                'score_total': row[4],
-                'score_components': row[5] or {},
-                'category': row[6],
-                'status': row[7],
-                'first_seen': row[8].strftime('%Y-%m-%d') if row[8] else 'N/A',
-                'last_updated': row[9].strftime('%Y-%m-%d %H:%M') if row[9] else 'N/A',
-                'stage': get_stage_from_score(row[4]),
-                'why_now': generate_why_now(row[10] or {})
+                'candidate_id': row['candidate_id'],
+                'defendant_text': row['defendant_text'],
+                'product_text': row['product_text'],
+                'injury_text': row['injury_text'],
+                'score_total': row['score_total'],
+                'score_components': row['score_components'] or {},
+                'category': row['category'],
+                'status': row['status'],
+                'first_seen': row['first_seen'].strftime('%Y-%m-%d') if row['first_seen'] else 'N/A',
+                'last_updated': row['last_updated'].strftime('%Y-%m-%d %H:%M') if row['last_updated'] else 'N/A',
+                'stage': get_stage_from_score(row['score_total']),
+                'why_now': generate_why_now(row['metrics_json'] or {})
             }
 
             # Fetch timeline (signal events) - will be empty for FAERS discovery MVP
@@ -230,8 +230,8 @@ def get_dossier(cluster_id: str) -> dict:
             evidence = []
             injuries = []
 
-            # Extract metrics from the row data (index 10 is metrics_json)
-            metrics_json = row[10] or {}
+            # Extract metrics from metrics_json
+            metrics_json = row['metrics_json'] or {}
             metrics = {
                 'velocity_7d': int(metrics_json.get('velocity_7d', 0)),
                 'velocity_28d': int(metrics_json.get('velocity_28d', 0)),
