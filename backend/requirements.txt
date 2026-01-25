@@ -21,6 +21,7 @@ biopython==1.81
 # Web scraping
 beautifulsoup4==4.12.2
 lxml==4.9.3
+feedparser==6.0.10
 
 # Data manipulation
 pandas==2.1.3
