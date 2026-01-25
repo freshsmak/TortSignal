@@ -22,14 +22,29 @@ This intake criteria identifies plaintiffs with:
 
 ## QUALIFYING INJURY
 
-**One or Both of the Following:**
-- Crohn's Disease (diagnosed by colonoscopy + biopsy)
-- Ulcerative Colitis (diagnosed by colonoscopy + biopsy)
+**The client must have been diagnosed with one of the following conditions:**
+- **Crohn's Disease** (diagnosed by colonoscopy + biopsy)
+- **Ulcerative Colitis** (diagnosed by colonoscopy + biopsy)
 
 **Diagnosis Requirements:**
 - Diagnosed between ages 15-40 (young-onset IBD)
-- Diagnosis date: 2010-2025 (past 15 years)
-- Medical records documenting diagnosis (colonoscopy report, pathology, gastroenterologist notes)
+- Diagnosis date: **1/1/2010 or later** (due to limited availability of records)
+- Medical records documenting diagnosis (colonoscopy report, pathology report, gastroenterologist notes)
+
+**REQUIRED: Qualifying Treatment (Client must have at least one of the following):**
+- Hospitalization for IBD flare
+- Surgery (bowel resection, colectomy, fistula repair, abscess drainage, ostomy)
+- Biologic medications (Remicade, Humira, Stelara, Entyvio, Xeljanz, Rinvoq, Skyrizi)
+- Immunosuppressants (azathioprine, 6-MP, methotrexate)
+- Corticosteroids (prednisone, budesonide) for IBD
+- Other IBD-specific treatment (exclusive enteral nutrition, fecal transplant)
+- **OR Death** (where IBD or IBD complications contributed to death)
+
+**EXCLUSIONS (FOR ALL CASES):**
+- Client must not have been diagnosed with IBD prior to 2010
+- Client must not be over age 45 at time of diagnosis
+- Client must not currently consume TiO2-containing products or plan to consume them in the future
+- Client must not have been diagnosed with cancer prior to IBD diagnosis (suggests alternative immunologic issue)
 
 ---
 
@@ -63,15 +78,20 @@ This intake criteria identifies plaintiffs with:
 - Old enough to have developed IBD (ages 15-40 in 2025)
 - Young enough that diagnosis is "young-onset" (not typical adult-onset IBD)
 
-### **Qualifying Severity (OPTIONAL - stronger cases):**
+### **Latency Period:**
 
-While any IBD diagnosis qualifies, stronger cases include:
-- Hospitalization(s) for IBD flares
-- One or more surgeries (bowel resection, colectomy, fistula repair)
-- Use of biologic medications (Remicade, Humira, Stelara, Entyvio)
-- Permanent ostomy (ileostomy, colostomy)
-- Loss of bowel length (>1 foot resected)
-- Fistulas, abscesses, strictures (complications)
+**The IBD diagnosis must be at least 5 years after first TiO2 product use.**
+
+- Ideally: 10-30 years between childhood exposure and IBD diagnosis
+- Minimum acceptable: 5 years (allows for early-onset cases)
+- Disqualify if IBD diagnosed within 5 years of first exposure (suggests alternative cause)
+
+**FOR CASES INVOLVING DEATH:**
+
+**EXCLUSIONS:**
+- Due to limited availability of records, date of death must be within 10 years of initial intake
+- Must be able to provide medical records showing IBD diagnosis and treatment
+- If cause of death on death certificate is NOT related to IBD or IBD complications (bowel perforation, sepsis, surgical complications), must provide pathology/autopsy records proving IBD connection
 
 ---
 
@@ -537,6 +557,233 @@ Based on comparable mass torts (Roundup, Talc, Hair Relaxer):
 - Tobacco: $206B (aggregate)
 
 **Realistic target: $15B-$40B across all defendants.**
+
+---
+
+## REQUIRED QUESTIONS (For Intake Staff)
+
+Ask these questions during initial client screening:
+
+### **Personal Information:**
+1. Client's full name, date of birth, current address, phone, email
+2. If deceased, name and contact information of estate representative/next of kin
+
+### **Medical Diagnosis:**
+3. **What type of IBD were you diagnosed with?** (Crohn's disease / Ulcerative colitis / Not sure)
+4. **When were you diagnosed with IBD?** (Month/Year)
+5. **How old were you when diagnosed?** (Must be 15-40)
+6. **Name and address of hospital where colonoscopy was performed**
+7. **Name and contact information of gastroenterologist (IBD doctor)**
+8. **Do you have pathology/biopsy reports confirming your diagnosis?** (Y/N)
+
+### **Treatment History:**
+9. **Have you received any of the following treatments for your IBD?** (Check all that apply)
+   - Hospitalization for IBD flare
+   - Surgery (bowel resection, colectomy, etc.)
+   - Biologic medications (Remicade, Humira, Stelara, Entyvio, etc.)
+   - Immunosuppressants (azathioprine, 6-MP, methotrexate)
+   - Corticosteroids (prednisone, budesonide)
+   - Other IBD treatment
+
+**DISQUALIFY if no treatment** (diagnosis alone insufficient)
+
+### **TiO2 Product Exposure:**
+10. **As a child/teenager, did you regularly consume any of the following products?** (See Exhibit A for complete list)
+    - Skittles
+    - Starbursts
+    - Trident White gum
+    - Mentos gum
+    - Other candy, gum, or processed foods
+
+11. **Which specific products did you consume most frequently?** (List top 3)
+
+12. **How often did you consume these products?**
+    - Daily
+    - 3-5 times per week
+    - 1-2 times per week
+    - Monthly
+
+**DISQUALIFY if less than 3x per week for 5+ years**
+
+13. **During what ages did you regularly consume these products?** (Must include ages 5-18)
+
+14. **For how many years did you consume these products?** (Must be at least 5 years)
+
+15. **Do you have any documentation of purchase/consumption?**
+    - Receipts (Y/N)
+    - Photos showing you eating these products (Y/N)
+    - Parent/guardian who can confirm (Y/N, get contact info)
+    - Social media posts mentioning favorite candies/gum (Y/N)
+
+### **Family History (Genetic Risk):**
+16. **Does anyone in your immediate family (parents, siblings) have IBD?** (Y/N)
+    - If YES: **DISQUALIFY** (genetic IBD risk)
+    - Exception: Sibling diagnosed AFTER client, if both consumed TiO2 products
+
+17. **Are you of Ashkenazi Jewish descent?** (Y/N)
+    - If YES: **Do any family members (even distant) have IBD?** (Y/N)
+    - If YES to both: **DISQUALIFY**
+
+18. **Do you or any immediate family members have other autoimmune diseases?** (Rheumatoid arthritis, lupus, MS, Type 1 diabetes, psoriasis)
+    - If multiple family members: **DISQUALIFY** (genetic autoimmune risk)
+
+### **Confounding Medical Factors:**
+19. **Before your IBD diagnosis, were you ever diagnosed with:**
+    - C. diff infection (Y/N) - if YES: **DISQUALIFY**
+    - Celiac disease (Y/N) - if YES: **DISQUALIFY**
+    - Other intestinal infections (Y/N) - if YES, get details
+    - Any cancer (Y/N) - if YES: **DISQUALIFY**
+
+20. **Before your IBD diagnosis, did you:**
+    - Smoke cigarettes (Y/N) - if >1 pack-year: **DISQUALIFY**
+    - Take ibuprofen/naproxen daily for more than 3 months (Y/N) - if YES: **DISQUALIFY**
+    - Take antibiotics frequently in childhood (>3 courses/year) (Y/N) - if YES: **DISQUALIFY**
+    - Take Accutane/isotretinoin for acne (Y/N) - if YES: **DISQUALIFY**
+
+21. **Have you had your appendix removed?** (Y/N)
+    - If YES: **Was this before or after IBD diagnosis?**
+    - If before: **DISQUALIFY** (appendectomy protective for UC)
+
+### **Birth History (if applicable to pediatric-onset cases):**
+22. **Were you born premature (before 37 weeks)?** (Y/N) - if YES: **DISQUALIFY**
+23. **What was your birth weight?** - if <5.5 lbs: **DISQUALIFY**
+24. **Did your mother smoke, drink, or use drugs during pregnancy?** (Y/N) - if YES: **DISQUALIFY**
+
+### **Jurisdictional/Litigation:**
+25. **What state do you currently live in?**
+    - Check if minor tolling allowed (DISQUALIFY if in CT, FL, IN, LA, NY with certain criteria)
+
+26. **Have you hired an attorney for any other IBD-related litigation?** (Y/N) - if YES: **DISQUALIFY**
+
+27. **Have you signed any settlement or release with food manufacturers?** (Y/N) - if YES: **DISQUALIFY**
+
+### **Death Cases (if applicable):**
+28. **Date of death**
+29. **Cause of death (as listed on death certificate)**
+30. **City and state where death occurred**
+31. **Are medical records available?** (Y/N)
+
+---
+
+## CASES TO BE DECLINED
+
+**Immediately disqualify if:**
+
+### **No Qualifying Diagnosis:**
+- No IBD diagnosis (only IBS, colitis NOS, diverticulitis, etc.)
+- Diagnosed before 2010 (record availability)
+- Diagnosed before age 15 or after age 45
+- No colonoscopy/biopsy confirmation
+
+### **No Treatment:**
+- Diagnosis only, no treatment received
+- Only 5-ASA medications (Asacol, Pentasa) - too mild, need biologics/surgery/hospitalization
+
+### **Insufficient TiO2 Exposure:**
+- Less than 5 years of consumption
+- Less than 3x per week consumption
+- No childhood/adolescent exposure (only adult consumption)
+- Cannot identify any specific TiO2-containing products
+
+### **Genetic/Familial IBD Risk:**
+- First-degree relative with IBD (parent, sibling diagnosed before client)
+- Ashkenazi Jewish with any family history of IBD
+- Positive genetic testing (NOD2, IL23R, ATG16L1 mutations)
+- Multiple family members with autoimmune diseases
+
+### **Confounding Medical Factors:**
+- C. diff infection before IBD diagnosis
+- Celiac disease
+- Prior cancer diagnosis
+- Chronic NSAID use (>3 months daily ibuprofen/naproxen)
+- Frequent antibiotics in childhood (>3 courses/year)
+- Accutane/isotretinoin use before diagnosis
+- Appendectomy before diagnosis (UC cases only)
+- Immunodeficiency disorders
+- Smoking history (>1 pack-year)
+
+### **Latency Issues:**
+- IBD diagnosed within 5 years of first TiO2 exposure (too short)
+
+### **Birth/Pregnancy Issues (pediatric-onset):**
+- Preterm birth (<37 weeks)
+- Low birth weight (<5.5 lbs)
+- Mother smoked/drank/used drugs during pregnancy
+- NICU stay >1 week
+
+### **Jurisdictional/Litigation:**
+- Resides in state without minor tolling (if diagnosed as minor): CT, FL, IN, LA, NY
+- Already retained counsel for IBD litigation
+- Already signed settlement/release with defendants
+- Bankruptcy discharged potential claims
+
+### **Record Availability:**
+- Deceased >10 years, no medical records available
+- Cannot provide colonoscopy/pathology reports
+- Cannot identify treating physician/hospital
+
+---
+
+## EXHIBIT A: TiO2-CONTAINING PRODUCTS
+
+**Qualifying Products (containing titanium dioxide E171):**
+
+### **Category 1: Candy**
+1. Skittles (Original, Wild Berry, Tropical, Sour)
+2. Starbursts (Original, Fave Reds, Duos, Minis)
+3. Mike & Ikes (all flavors)
+4. Jell-O pudding cups (vanilla, white chocolate, cheesecake)
+5. Marshmallows (Kraft Jet-Puffed, store brands)
+6. Mentos (various flavors)
+7. Tic Tacs (white flavors)
+8. White chocolate products (Hershey's, Nestlé)
+9. Yogurt-covered raisins, pretzels, snacks
+10. Sour Patch Kids (white/vanilla)
+
+### **Category 2: Gum**
+11. Trident White (all flavors)
+12. Mentos Pure Fresh Gum (white/mint flavors)
+13. Orbit White
+14. 5 Gum (white package variants)
+15. Extra White gum
+16. Other whitening gums
+
+### **Category 3: Frosting, Icing, Decorations**
+17. Betty Crocker frosting (vanilla, white, cream cheese)
+18. Duncan Hines frosting (vanilla, cream cheese)
+19. Pillsbury frosting (vanilla, white)
+20. Cake decorating icing (white, pastel colors)
+21. Fondant (white, colored)
+22. Sprinkles (white, pearl, certain colors)
+23. Edible glitter, luster dust (white, silver)
+
+### **Category 4: Dairy & Processed Foods**
+24. Processed cheese slices (Kraft Singles - white American)
+25. String cheese (certain brands)
+26. Vanilla yogurt (certain brands - check labels)
+27. Vanilla pudding cups
+28. Coffee creamers (powdered, certain liquid - vanilla/white flavors)
+
+### **Category 5: Supplements & Medications (if consumed as child)**
+29. Chewable vitamins (white/light colored tablets)
+30. Calcium supplements (certain brands)
+31. Over-the-counter medications (white tablets/capsules)
+
+**Note:** This is not exhaustive. TiO2 (E171) appears on ingredient labels as:
+- Titanium dioxide
+- E171 (EU notation)
+- CI 77891 (Color Index number)
+- White pigment
+
+**For Intake:** Client should identify at least 1-2 specific products consumed regularly for 5+ years during childhood (ages 5-18). Products consumed 3+ times per week are ideal.
+
+**If client is unsure:** Ask:
+- "What was your favorite candy as a child?"
+- "Did you chew gum regularly? What brand?"
+- "Did you eat a lot of white/vanilla frosting or cake decorations?"
+- "Did your family buy processed cheese slices or string cheese?"
+
+**Product Verification:** We can cross-reference ingredient labels from the relevant time period to confirm TiO2 content.
 
 ---
 
