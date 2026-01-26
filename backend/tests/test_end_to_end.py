@@ -1,13 +1,14 @@
 """
 End-to-End Test for EDE Backend
-Tests the complete pipeline: regulatory scanning → PubMed → scoring → API
+Tests the complete pipeline: regulatory scanning → PubMed → epidemiology → scoring → API
 
 This test validates:
 1. Regulatory scanner detects TiO2 EU ban
 2. PubMed integration finds mechanistic/epidemiological evidence
-3. Bradford Hill scorer returns 94/100 for TiO2 → IBD
-4. Litigation scorer returns 106/100 for TiO2 → IBD
-5. API endpoints return correct data
+3. Epidemiology integration (SEER/CDC) detects disease trends and validates temporality
+4. Bradford Hill scorer returns 94/100 for TiO2 → IBD
+5. Litigation scorer returns 106/100 for TiO2 → IBD
+6. API endpoints return correct data
 """
 
 import sys
@@ -18,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scanners.regulatory import RegulatoryScanner
 from integrations.pubmed import PubMedIntegration
+from integrations.epidemiology import EpidemiologyIntegration
 from scoring.bradford_hill import BradfordHillScorer
 from scoring.litigation import LitigationScorer
 
@@ -109,10 +111,51 @@ def test_pubmed_integration():
     return results
 
 
-def test_bradford_hill_scoring():
-    """Test 3: Bradford Hill Scoring"""
+def test_epidemiology_integration():
+    """Test 3: Epidemiology Integration (SEER/CDC WONDER)"""
     print("\n" + "="*80)
-    print("TEST 3: BRADFORD HILL SCORING")
+    print("TEST 3: EPIDEMIOLOGY INTEGRATION (SEER/CDC WONDER)")
+    print("="*80 + "\n")
+
+    epi = EpidemiologyIntegration()
+
+    # Analyze TiO2 → IBD temporal relationship
+    result = epi.analyze_disease_signal(
+        disease="Inflammatory Bowel Disease",
+        disease_icd10_code="K50-K51",
+        exposure_start_year=1990,  # TiO2 food additive approved
+        exposure_peak_year=2000,   # Widespread use
+        expected_latency=10,       # IBD develops 5-15 years post-exposure
+        start_year=1999,
+        end_year=2020
+    )
+
+    # Verify results
+    assert 'trend' in result
+    assert 'temporality_assessment' in result
+    assert 'trend_statistics' in result
+
+    print(f"\n✓ Disease Trend Analysis:")
+    print(f"  Direction: {result['trend'].trend_direction}")
+    print(f"  Overall Change: {result['trend'].percent_change:+.1f}%")
+    print(f"  Data Points: {len(result['trend'].years)} years")
+
+    print(f"\n✓ Trend Statistics:")
+    print(f"  {result['trend_statistics']['interpretation']}")
+
+    print(f"\n✓ Temporality Assessment:")
+    print(f"  Exposure Precedes Disease: {result['temporality_assessment']['exposure_precedes_disease']}")
+    print(f"  Latency Period: {result['temporality_assessment']['latency_period']} years")
+    print(f"  Bradford Hill Score: {result['bradford_hill_temporality_score']}/10")
+
+    print("\n✅ EPIDEMIOLOGY INTEGRATION TEST PASSED")
+    return result
+
+
+def test_bradford_hill_scoring():
+    """Test 4: Bradford Hill Scoring"""
+    print("\n" + "="*80)
+    print("TEST 4: BRADFORD HILL SCORING")
     print("="*80 + "\n")
 
     scorer = BradfordHillScorer()
@@ -209,9 +252,9 @@ def test_bradford_hill_scoring():
 
 
 def test_litigation_scoring(bradford_hill_score: float):
-    """Test 4: Litigation Scoring"""
+    """Test 5: Litigation Scoring"""
     print("\n" + "="*80)
-    print("TEST 4: LITIGATION SCORING")
+    print("TEST 5: LITIGATION SCORING")
     print("="*80 + "\n")
 
     scorer = LitigationScorer()
@@ -315,10 +358,13 @@ def run_all_tests():
             print(f"\n⚠️  PubMed test failed (API may be unavailable): {e}")
             pubmed_results = None
 
-        # Test 3: Bradford Hill Scoring
+        # Test 3: Epidemiology Integration
+        epidemiology_result = test_epidemiology_integration()
+
+        # Test 4: Bradford Hill Scoring
         bradford_hill_result = test_bradford_hill_scoring()
 
-        # Test 4: Litigation Scoring
+        # Test 5: Litigation Scoring
         litigation_result = test_litigation_scoring(bradford_hill_result.composite_score)
 
         # Summary
@@ -330,6 +376,7 @@ def run_all_tests():
             print("✅ PubMed Integration: PASSED")
         else:
             print("⚠️  PubMed Integration: SKIPPED")
+        print(f"✅ Epidemiology Integration: PASSED (Temporality: {epidemiology_result['bradford_hill_temporality_score']}/10)")
         print(f"✅ Bradford Hill Scoring: PASSED ({bradford_hill_result.composite_score}/100)")
         print(f"✅ Litigation Scoring: PASSED ({litigation_result.composite_score}/100)")
 
