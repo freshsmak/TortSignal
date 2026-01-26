@@ -264,8 +264,30 @@ class BradfordHillScorer:
         THIS IS THE ONLY REQUIRED CRITERION
         If score = 0, causation is IMPOSSIBLE
 
+        Can use epidemiology_validation data if available
+
         Returns: {'score': float (0-10), 'evidence': dict}
         """
+        # Check if we have epidemiology validation data (preferred source)
+        epi_validation = data.get('epidemiology_validation')
+
+        if epi_validation:
+            # Use validated epidemiology temporality score
+            score = epi_validation.get('bradford_hill_temporality_score', 5)
+
+            return {
+                'score': score,
+                'evidence': {
+                    'source': 'Epidemiology Validation (CDC WONDER/SEER)',
+                    'exposure_period': epi_validation.get('exposure_period', 'Unknown'),
+                    'disease_period': epi_validation.get('disease_period', 'Unknown'),
+                    'observed_latency': f"{epi_validation.get('latency_period', 'Unknown')} years",
+                    'temporality_valid': epi_validation.get('temporality_valid', False),
+                    'interpretation': epi_validation.get('interpretation', 'Temporal sequence analysis')
+                }
+            }
+
+        # Fallback to manual timeline data
         exposure_timeline = data.get('exposure_timeline', {})
         disease_timeline = data.get('disease_timeline', {})
 
