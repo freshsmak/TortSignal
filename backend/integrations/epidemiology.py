@@ -12,207 +12,54 @@ import io
 from dataclasses import dataclass
 import statistics
 
+# Import improved CDC WONDER implementation
+try:
+    from integrations.cdc_wonder import CDCWonderAPI, DiseaseTrend
+    CDC_WONDER_IMPORTED = True
+except ImportError:
+    # Fall back to local import if running from integrations directory
+    try:
+        from cdc_wonder import CDCWonderAPI, DiseaseTrend
+        CDC_WONDER_IMPORTED = True
+    except ImportError:
+        CDC_WONDER_IMPORTED = False
+        # Will define minimal stub below
 
-@dataclass
-class DiseaseTrend:
-    """Disease incidence/mortality trend over time"""
-    disease: str
-    years: List[int]
-    rates: List[float]  # Age-adjusted rates per 100,000
-    counts: List[int]  # Raw case counts
-    data_source: str  # 'CDC_WONDER' or 'SEER'
-    anomalies_detected: List[Dict]
-    trend_direction: str  # 'INCREASING', 'DECREASING', 'STABLE'
-    percent_change: float  # Overall percent change from first to last year
-    interpretation: str
 
+# If import failed, define minimal stub
+if not CDC_WONDER_IMPORTED:
+    @dataclass
+    class DiseaseTrend:
+        """Disease incidence/mortality trend over time"""
+        disease: str
+        years: List[int]
+        rates: List[float]
+        counts: List[int]
+        data_source: str
+        anomalies_detected: List[Dict]
+        trend_direction: str
+        percent_change: float
+        interpretation: str
 
-class CDCWonderAPI:
-    """
-    Integration with CDC WONDER API for mortality and disease trends
+    class CDCWonderAPI:
+        """Stub CDC WONDER API"""
+        def __init__(self):
+            pass
 
-    CDC WONDER (Wide-ranging ONline Data for Epidemiologic Research)
-    API endpoint: https://wonder.cdc.gov/controller/datarequest/{dataset_id}
-
-    Datasets:
-    - D76: Detailed Mortality (1999-2020)
-    - D77: Multiple Cause of Death (1999-2020)
-    - D139: Compressed Mortality (1999-2020)
-    """
-
-    BASE_URL = "https://wonder.cdc.gov/controller/datarequest"
-
-    def __init__(self):
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'EDE/1.0 (Epidemiological Discovery Engine; Research)'
-        })
-
-    def query_disease_trend(
-        self,
-        disease_icd10_code: str,
-        start_year: int = 1999,
-        end_year: int = 2020,
-        dataset: str = "D76"  # Detailed Mortality
-    ) -> DiseaseTrend:
-        """
-        Query CDC WONDER for disease mortality trends
-
-        Args:
-            disease_icd10_code: ICD-10 code (e.g., 'K50' for Crohn's disease, 'K51' for Ulcerative colitis)
-            start_year: Start year for trend analysis
-            end_year: End year for trend analysis
-            dataset: CDC WONDER dataset ID
-
-        Returns:
-            DiseaseTrend object with year-by-year mortality data
-        """
-        print(f"\n[CDC WONDER] Querying {disease_icd10_code} trends ({start_year}-{end_year})...")
-
-        try:
-            # Build XML request
-            request_xml = self._build_mortality_request_xml(
-                disease_icd10_code,
-                start_year,
-                end_year
+        def query_disease_trend(self, disease_icd10_code: str, start_year: int = 1999,
+                                end_year: int = 2020, dataset: str = "D76") -> DiseaseTrend:
+            """Stub method"""
+            return DiseaseTrend(
+                disease=f"Disease ({disease_icd10_code})",
+                years=list(range(start_year, end_year + 1)),
+                rates=[1.0] * (end_year - start_year + 1),
+                counts=[3300] * (end_year - start_year + 1),
+                data_source='CDC_WONDER (stub)',
+                anomalies_detected=[],
+                trend_direction='STABLE',
+                percent_change=0.0,
+                interpretation="No data available"
             )
-
-            # Submit request
-            response = self.session.post(
-                f"{self.BASE_URL}/{dataset}",
-                data={'request_xml': request_xml},
-                timeout=30
-            )
-
-            response.raise_for_status()
-
-            # Parse response
-            trend = self._parse_wonder_response(response.text, disease_icd10_code)
-
-            print(f"[CDC WONDER] Found {len(trend.years)} years of data")
-            print(f"[CDC WONDER] Trend: {trend.trend_direction} ({trend.percent_change:+.1f}%)")
-
-            return trend
-
-        except Exception as e:
-            print(f"[CDC WONDER] Error querying: {e}")
-            print(f"[CDC WONDER] Using mock data for testing")
-            return self._mock_ibd_data(disease_icd10_code, start_year, end_year)
-
-    def _build_mortality_request_xml(
-        self,
-        icd10_code: str,
-        start_year: int,
-        end_year: int
-    ) -> str:
-        """
-        Build XML request for CDC WONDER API
-
-        Request structure:
-        - Group by: Year
-        - ICD-10 code filter
-        - Age-adjusted rates
-        """
-        # Simplified XML request (real implementation would be more complex)
-        xml = f"""<?xml version="1.0" encoding="utf-8"?>
-<request-parameters>
-    <accept_datause_restrictions>true</accept_datause_restrictions>
-    <b_parameters>
-        <b_group_by>
-            <parameter>
-                <code>D76.V1</code> <!-- Year -->
-            </parameter>
-        </b_group_by>
-        <b_measures>
-            <parameter>
-                <code>D76.M1</code> <!-- Deaths -->
-            </parameter>
-            <parameter>
-                <code>D76.M3</code> <!-- Age Adjusted Rate -->
-            </parameter>
-        </b_measures>
-    </b_parameters>
-    <v_parameters>
-        <v_icd10>
-            <parameter>
-                <code>{icd10_code}</code>
-            </parameter>
-        </v_icd10>
-        <v_year>
-            <range>
-                <r_begin>{start_year}</r_begin>
-                <r_end>{end_year}</r_end>
-            </range>
-        </v_year>
-    </v_parameters>
-</request-parameters>"""
-
-        return xml
-
-    def _parse_wonder_response(self, xml_response: str, disease_code: str) -> DiseaseTrend:
-        """Parse CDC WONDER XML response into DiseaseTrend object"""
-        # This is a simplified parser - real implementation would parse full XML
-        # For now, return mock data structure
-        return self._mock_ibd_data(disease_code, 1999, 2020)
-
-    def _mock_ibd_data(self, disease_code: str, start_year: int, end_year: int) -> DiseaseTrend:
-        """
-        Mock IBD mortality data for testing
-        Based on real trends: IBD mortality increased ~30% from 1999-2020
-        """
-        years = list(range(start_year, end_year + 1))
-
-        # Simulate increasing trend (baseline 0.5 per 100k, increases to 0.65 per 100k)
-        baseline = 0.5
-        increase_per_year = 0.007  # ~1.4% increase per year
-
-        rates = [baseline + (i * increase_per_year) for i in range(len(years))]
-
-        # Add some noise
-        import random
-        random.seed(42)
-        rates = [r + random.uniform(-0.02, 0.02) for r in rates]
-
-        # Calculate counts (assume US population ~320M)
-        population = 320_000_000
-        counts = [int(r * (population / 100_000)) for r in rates]
-
-        # Detect anomalies (years with >15% increase)
-        anomalies = []
-        for i in range(1, len(years)):
-            pct_change = ((rates[i] - rates[i-1]) / rates[i-1]) * 100
-            if pct_change > 15:
-                anomalies.append({
-                    'year': years[i],
-                    'rate': rates[i],
-                    'previous_rate': rates[i-1],
-                    'percent_increase': pct_change,
-                    'type': 'SPIKE'
-                })
-
-        # Overall trend
-        overall_change = ((rates[-1] - rates[0]) / rates[0]) * 100
-
-        if overall_change > 10:
-            trend_direction = 'INCREASING'
-        elif overall_change < -10:
-            trend_direction = 'DECREASING'
-        else:
-            trend_direction = 'STABLE'
-
-        interpretation = f"IBD mortality rates {trend_direction.lower()} {overall_change:+.1f}% from {start_year} to {end_year}"
-
-        return DiseaseTrend(
-            disease=f"IBD ({disease_code})",
-            years=years,
-            rates=rates,
-            counts=counts,
-            data_source='CDC_WONDER (mock)',
-            anomalies_detected=anomalies,
-            trend_direction=trend_direction,
-            percent_change=overall_change,
-            interpretation=interpretation
-        )
 
 
 class SEERDataWrapper:
