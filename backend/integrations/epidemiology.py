@@ -3,6 +3,20 @@ Epidemiology Integration - SEER & CDC WONDER
 Detects disease trends, anomalies, and temporal patterns for EDE Epidemiology-First methodology
 """
 
+import os
+from pathlib import Path
+
+# Load .env from project root
+try:
+    from dotenv import load_dotenv
+    # Try to find .env in project root (parent of backend/)
+    project_root = Path(__file__).parent.parent.parent
+    env_path = project_root / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    pass  # dotenv not installed, rely on system environment
+
 import requests
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Optional, Tuple
