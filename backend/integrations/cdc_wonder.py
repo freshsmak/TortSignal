@@ -151,6 +151,10 @@ class CDCWonderAPI:
             'O_show_totals': 'true',
             'O_precision': '1',
             'O_timeout': '300',
+
+            # Request tab-delimited output (easier to parse than HTML)
+            'O_export': 'true',
+            'O_title': 'Disease Trend Query',
         }
 
         return form_data
@@ -166,16 +170,199 @@ class CDCWonderAPI:
         Parse CDC WONDER response
 
         CDC WONDER returns data in HTML tables or tab-delimited text.
-        This is complex - for now, we'll use literature-based estimates.
+        Attempts multiple parsing strategies:
+        1. Tab-delimited (TSV) format
+        2. HTML table extraction
+        3. Fallback to literature estimates
         """
         # Check if response contains error messages
-        if 'error' in html_response.lower() or 'invalid' in html_response.lower():
-            raise Exception("CDC WONDER returned error response")
+        if 'error' in html_response.lower() and 'no data' in html_response.lower():
+            raise Exception("CDC WONDER returned no data for query")
 
-        # Try to extract data from response
-        # (Real implementation would parse HTML tables or TSV data)
-        # For now, fall back to literature estimates
+        # Strategy 1: Try TSV parsing (if format=tsv was requested)
+        if '\t' in html_response and 'Year\t' in html_response:
+            try:
+                trend = self._parse_tsv_response(html_response, disease_code)
+                if trend:
+                    return trend
+            except Exception as e:
+                print(f"[CDC WONDER] TSV parse failed: {e}")
+
+        # Strategy 2: Try HTML table parsing
+        if '<table' in html_response.lower():
+            try:
+                trend = self._parse_html_table(html_response, disease_code)
+                if trend:
+                    return trend
+            except Exception as e:
+                print(f"[CDC WONDER] HTML parse failed: {e}")
+
+        # Strategy 3: Fallback to literature estimates
+        print(f"[CDC WONDER] Could not parse response, using literature estimates")
         return self._estimate_from_literature(disease_code, start_year, end_year)
+
+    def _parse_tsv_response(
+        self,
+        tsv_data: str,
+        disease_code: str
+    ) -> Optional[DiseaseTrend]:
+        """
+        Parse tab-delimited CDC WONDER response
+
+        Expected format:
+        Year\tDeaths\tAge Adjusted Rate
+        1999\t1234\t0.5
+        2000\t1256\t0.52
+        ...
+        """
+        lines = tsv_data.strip().split('\n')
+        if len(lines) < 2:
+            return None
+
+        # Find header line
+        header_idx = -1
+        for i, line in enumerate(lines):
+            if 'Year' in line and ('Deaths' in line or 'Rate' in line):
+                header_idx = i
+                break
+
+        if header_idx == -1:
+            return None
+
+        # Parse data lines
+        years = []
+        rates = []
+        counts = []
+
+        for line in lines[header_idx + 1:]:
+            parts = line.split('\t')
+            if len(parts) < 2:
+                continue
+
+            try:
+                year = int(parts[0])
+                # Skip summary/total rows
+                if year < 1990 or year > 2030:
+                    continue
+
+                # Deaths (count)
+                deaths = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+
+                # Age-adjusted rate (per 100,000)
+                rate = float(parts[2]) if len(parts) > 2 and parts[2].replace('.', '').isdigit() else 0.0
+
+                years.append(year)
+                counts.append(deaths)
+                rates.append(rate)
+
+            except (ValueError, IndexError):
+                continue
+
+        if not years:
+            return None
+
+        # Calculate trend
+        percent_change = ((rates[-1] - rates[0]) / rates[0] * 100) if rates[0] > 0 else 0
+
+        if percent_change > 20:
+            trend_direction = 'INCREASING'
+        elif percent_change < -20:
+            trend_direction = 'DECREASING'
+        else:
+            trend_direction = 'STABLE'
+
+        interpretation = f"CDC WONDER data: {len(years)} years, {percent_change:+.1f}% change"
+
+        return DiseaseTrend(
+            disease=disease_code,
+            years=years,
+            rates=rates,
+            counts=counts,
+            data_source='CDC WONDER (TSV)',
+            anomalies_detected=[],
+            trend_direction=trend_direction,
+            percent_change=percent_change,
+            interpretation=interpretation
+        )
+
+    def _parse_html_table(
+        self,
+        html_content: str,
+        disease_code: str
+    ) -> Optional[DiseaseTrend]:
+        """
+        Parse HTML table from CDC WONDER response
+
+        Uses simple regex extraction rather than full HTML parser
+        to avoid additional dependencies.
+        """
+        import re
+
+        # Find table data using regex
+        # Look for patterns like: <td>1999</td><td>1234</td><td>0.52</td>
+        year_pattern = r'<td[^>]*>(\d{4})</td>'
+        number_pattern = r'<td[^>]*>([\d,\.]+)</td>'
+
+        years = []
+        rates = []
+        counts = []
+
+        # Find all table rows
+        rows = re.findall(r'<tr[^>]*>(.+?)</tr>', html_content, re.DOTALL)
+
+        for row in rows:
+            # Extract year
+            year_match = re.search(year_pattern, row)
+            if not year_match:
+                continue
+
+            year = int(year_match.group(1))
+            if year < 1990 or year > 2030:
+                continue
+
+            # Extract numbers from row
+            numbers = re.findall(number_pattern, row)
+            if len(numbers) < 2:
+                continue
+
+            try:
+                # First number usually deaths, second usually rate
+                deaths = int(numbers[0].replace(',', ''))
+                rate = float(numbers[1].replace(',', ''))
+
+                years.append(year)
+                counts.append(deaths)
+                rates.append(rate)
+
+            except (ValueError, IndexError):
+                continue
+
+        if not years:
+            return None
+
+        # Calculate trend
+        percent_change = ((rates[-1] - rates[0]) / rates[0] * 100) if rates[0] > 0 else 0
+
+        if percent_change > 20:
+            trend_direction = 'INCREASING'
+        elif percent_change < -20:
+            trend_direction = 'DECREASING'
+        else:
+            trend_direction = 'STABLE'
+
+        interpretation = f"CDC WONDER data: {len(years)} years, {percent_change:+.1f}% change"
+
+        return DiseaseTrend(
+            disease=disease_code,
+            years=years,
+            rates=rates,
+            counts=counts,
+            data_source='CDC WONDER (HTML)',
+            anomalies_detected=[],
+            trend_direction=trend_direction,
+            percent_change=percent_change,
+            interpretation=interpretation
+        )
 
     def _estimate_from_literature(
         self,

@@ -134,19 +134,22 @@ class BradfordHillScorer:
             }
         elif effect_size >= 5.0:
             score = 10
-            interpretation = 'Very strong (RR/OR ≥5.0)'
+            interpretation = 'Very strong (RR/OR ≥5.0, e.g., asbestos→mesothelioma)'
         elif effect_size >= 3.0:
             score = 8
             interpretation = 'Strong (RR/OR 3.0-5.0)'
         elif effect_size >= 2.0:
-            score = 6
-            interpretation = 'Moderate (RR/OR 2.0-3.0)'
+            score = 7
+            interpretation = 'Moderate-strong (RR/OR 2.0-3.0)'
         elif effect_size >= 1.5:
+            score = 6
+            interpretation = 'Moderate (RR/OR 1.5-2.0, comparable to Roundup at 1.41)'
+        elif effect_size >= 1.3:
             score = 4
-            interpretation = 'Modest (RR/OR 1.5-2.0)'
-        else:  # 1.2-1.5
+            interpretation = 'Modest (RR/OR 1.3-1.5)'
+        else:  # 1.2-1.3
             score = 2
-            interpretation = 'Weak (RR/OR 1.2-1.5)'
+            interpretation = 'Weak (RR/OR 1.2-1.3)'
 
         return {
             'score': score,
@@ -480,10 +483,16 @@ class BradfordHillScorer:
         elif len(occupational_interventions) >= 1:
             score = 8
             interpretation = 'Occupational intervention studies show disease reduction'
-        # Check for animal interventions
-        elif len(animal_interventions) >= 1:
+        # Check for animal interventions (graduated by study count)
+        elif len(animal_interventions) >= 6:
+            score = 7
+            interpretation = f'Multiple animal intervention studies ({len(animal_interventions)}) show consistent effect'
+        elif len(animal_interventions) >= 3:
             score = 6
-            interpretation = f'Animal intervention studies ({len(animal_interventions)})'
+            interpretation = f'Several animal intervention studies ({len(animal_interventions)}) support causation'
+        elif len(animal_interventions) >= 1:
+            score = 5
+            interpretation = f'Limited animal intervention evidence ({len(animal_interventions)} study/studies)'
         # Check for regulatory bans as natural experiments
         elif regulatory_actions:
             # Find most recent ban
