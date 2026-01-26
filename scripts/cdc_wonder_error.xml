@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<page>
+<platform>prod</platform>
+<title>Processing Error</title>
+<message>To Group Results By 'Ten-Year Age Groups' you must also select the 'Ten-Year Age Groups' button where found below section #1.</message>
+<message>To Group Results By {0} you must also select the {1} button where found below section #1.</message>
+<message>To Group Results By {0} you must also select the {1} button where found below section #1.</message>
+<message>To Group Results By {0} you must also select the {1} button where found below section #1.</message>
+<message>Standard age-adjusted rates are only available for the ten-year age groups. #Age-Adjusted Rates Hints#</message>
+</page>
