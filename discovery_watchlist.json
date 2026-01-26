@@ -1,0 +1,66 @@
+[
+  {
+    "signal_id": "HAZ-20260126-001",
+    "chemical": "Titanium Dioxide",
+    "disease": "Inflammatory Bowel Disease",
+    "methodology": "HAZARD_FIRST",
+    "bradford_hill_score": 85,
+    "date_discovered": "2026-01-26T22:25:15.839649",
+    "regulatory_trigger": {
+      "agency": "EU ECHA",
+      "action_type": "BAN",
+      "action_date": "2022-08-07",
+      "basis": "Cannot rule out genotoxicity after ingestion of TiO2 particles"
+    },
+    "exposure": {
+      "population_exposed": 250000000,
+      "sources": [
+        "Candy",
+        "Processed foods",
+        "Cosmetics",
+        "Supplements"
+      ],
+      "exposure_route": "Ingestion",
+      "demographics": "Children (highest candy consumption)"
+    },
+    "epidemiology_validation": {
+      "trend_detected": true,
+      "percent_change": 72.0,
+      "interpretation": "Strong increase detected in CDC data"
+    },
+    "status": "WATCHLIST",
+    "notes": "EU/US regulatory divergence. Strong increase detected in CDC data"
+  },
+  {
+    "signal_id": "HAZ-20260126-002",
+    "chemical": "Titanium Dioxide",
+    "disease": "Colorectal Cancer",
+    "methodology": "HAZARD_FIRST",
+    "bradford_hill_score": 70,
+    "date_discovered": "2026-01-26T22:25:15.839738",
+    "regulatory_trigger": {
+      "agency": "EU ECHA",
+      "action_type": "BAN",
+      "action_date": "2022-08-07",
+      "basis": "Cannot rule out genotoxicity after ingestion of TiO2 particles"
+    },
+    "exposure": {
+      "population_exposed": 250000000,
+      "sources": [
+        "Candy",
+        "Processed foods",
+        "Cosmetics",
+        "Supplements"
+      ],
+      "exposure_route": "Ingestion",
+      "demographics": "Children (highest candy consumption)"
+    },
+    "epidemiology_validation": {
+      "trend_detected": true,
+      "percent_change": 25.0,
+      "interpretation": "Moderate increase detected in SEER data"
+    },
+    "status": "WATCHLIST",
+    "notes": "EU/US regulatory divergence. Moderate increase detected in SEER data"
+  }
+]
