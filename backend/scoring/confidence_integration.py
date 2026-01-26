@@ -383,7 +383,9 @@ class ConfidenceAwareLitigationScorer:
             Confidence-adjusted litigation result
         """
         # Step 1: Run standard litigation scoring
-        original_result = self.base_scorer.score(signal_data)
+        # Extract bradford_hill_score from signal_data
+        bh_score = signal_data.get('bradford_hill_score', signal_data.get('causal_strength', 70.0))
+        original_result = self.base_scorer.score(signal_data, bh_score)
 
         # Step 2: Build confidence assessment
         lit_confidence = self._build_confidence_assessment(
